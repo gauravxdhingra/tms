@@ -416,6 +416,43 @@ Chaos tests to run periodically (not every build):
 
 ---
 
+## Angular Component Tests (Jest + Angular Testing Library)
+
+```typescript
+// payment-queue.component.spec.ts
+describe('PaymentQueueComponent', () => {
+  let fixture: ComponentFixture<PaymentQueueComponent>;
+  let paymentService: jest.Mocked<PaymentService>;
+
+  beforeEach(async () => {
+    paymentService = { list: jest.fn() } as any;
+    await TestBed.configureTestingModule({
+      imports: [PaymentQueueComponent],
+      providers: [{ provide: PaymentService, useValue: paymentService }],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PaymentQueueComponent);
+  });
+
+  it('should display PENDING_APPROVAL badge for pending payments', () => {
+    paymentService.list.mockReturnValue(of({ data: [mockPayment('PENDING_APPROVAL')], totalCount: 1 }));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="status-badge"]').textContent)
+      .toContain('PENDING_APPROVAL');
+  });
+
+  it('should show Approve button only for PAYMENT_CHECKER role', () => {
+    TestBed.inject(SessionStore).patchState({ roles: ['PAYMENT_VIEWER'] });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="approve-btn"]')).toBeNull();
+
+    TestBed.inject(SessionStore).patchState({ roles: ['PAYMENT_CHECKER'] });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="approve-btn"]')).not.toBeNull();
+  });
+});
+```
+
 ## E2E Tests (Playwright)
 
 **Scope:** Critical golden paths only. Not every screen.
@@ -433,7 +470,7 @@ Chaos tests to run periodically (not every build):
 export default defineConfig({
   testDir: './e2e',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',  // Angular dev server
     trace: 'on-first-retry',
   },
   projects: [
@@ -441,18 +478,19 @@ export default defineConfig({
   ],
 });
 
-// e2e/payment.spec.ts (example)
+// e2e/payment.spec.ts
 test('create and approve payment', async ({ page }) => {
   await loginAs(page, 'payment-initiator');
   await page.goto('/payments/new');
-  await fillPaymentForm(page, { amount: '50000', currency: 'EUR' });
+  await page.getByLabel('Amount').fill('50000');
+  await page.getByLabel('Currency').selectOption('EUR');
   await page.getByRole('button', { name: 'Submit' }).click();
-  await expect(page.getByText('PENDING_APPROVAL')).toBeVisible();
+  await expect(page.getByTestId('payment-status')).toHaveText('PENDING_APPROVAL');
 
   await loginAs(page, 'payment-approver');
   await page.goto('/payments/approvals');
   await page.getByTestId('approve-btn').first().click();
-  await expect(page.getByText('APPROVED')).toBeVisible();
+  await expect(page.getByTestId('payment-status')).toHaveText('APPROVED');
 });
 ```
 

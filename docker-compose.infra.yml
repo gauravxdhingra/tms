@@ -1,0 +1,184 @@
+services:
+
+  # ── PostgreSQL 17 ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: tms-postgres
+    environment:
+      POSTGRES_DB: tms
+      POSTGRES_USER: tms
+      POSTGRES_PASSWORD: tms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tms -d tms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Kafka 3.8 (KRaft — no ZooKeeper) ────────────────────────────────────────
+  kafka:
+    image: apache/kafka:3.8.1
+    container_name: tms-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "tms-local-cluster-001"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── Redis 7 ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tms-redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ── RabbitMQ 3.13 ───────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: tms-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Keycloak 25 ─────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: tms-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/tms-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8180/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
+  # ── MinIO (S3-compatible object storage) ────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: tms-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── OpenSearch 2 ────────────────────────────────────────────────────────────
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: tms-opensearch
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── Mailpit (SMTP trap for local notifications) ──────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: tms-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
+  # ── WireMock (SWIFT / external system stubs) ─────────────────────────────────
+  wiremock:
+    image: wiremock/wiremock:3.10.0-alpine
+    container_name: tms-wiremock
+    command: --port 8089 --verbose
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./infra/wiremock:/home/wiremock
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  kafka-data:
+  redis-data:
+  rabbitmq-data:
+  keycloak-data:
+  minio-data:
+  opensearch-data:

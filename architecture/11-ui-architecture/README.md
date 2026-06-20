@@ -2,13 +2,13 @@
 
 ## Overview
 
-The TMS frontend is a single-page application (SPA) built with React 19 and TypeScript, communicating with backend services exclusively via the BFF (`tms-bff`). The BFF aggregates microservice responses into view-optimised payloads and streams real-time updates over Server-Sent Events (SSE). The UI never calls individual microservices directly.
+The TMS frontend is an Angular SPA communicating with backend services exclusively via the BFF (`tms-bff`). The BFF aggregates microservice responses into view-optimised payloads and streams real-time updates over Server-Sent Events (SSE). The Angular app never calls individual microservices directly.
 
 ```
-Browser (React SPA)
+Browser (Angular SPA)
     │
-    ├── REST/JSON (TanStack Query) ──────► Spring Cloud Gateway ──► tms-bff ──► microservices
-    └── SSE (EventSource)  ─────────────► tms-bff (WebFlux SSE endpoint)
+    ├── REST/JSON (Angular HttpClient) ──► Spring Cloud Gateway ──► tms-bff ──► microservices
+    └── SSE (EventSource service) ────────► tms-bff (WebFlux SSE endpoint)
 ```
 
 ---
@@ -17,193 +17,206 @@ Browser (React SPA)
 
 | Concern | Choice | Rationale |
 |---------|--------|-----------|
-| Framework | React 19 + TypeScript 5.x | Server Components (future-ready), concurrent features, strong types |
-| Build | Vite 6.x | Sub-second HMR, native ESM, minimal config |
-| Routing | React Router v7 (framework mode) | Loader/Action pattern, nested routes, code splitting |
-| Server state | TanStack Query v5 | Normalised cache, background refetch, optimistic updates |
-| UI state | Zustand | Lightweight; scoped slices per domain (no global store sprawl) |
-| Components | Ant Design 5.x (AntD) | Enterprise-grade; date pickers, form fields, layout; fully typed |
-| Data grids | AG Grid Community → Enterprise | 100K+ row virtual scroll, server-side row model, column pinning, grouping |
-| Charts | Recharts (simple) + Apache ECharts (complex) | Recharts for KPIs; ECharts for waterfall, heatmap, candlestick |
-| Forms | React Hook Form 7 + Zod | Schema validation mirrors backend Zod/Bean Validation DTOs |
-| Dates | date-fns 3 + date-fns-tz | Business day calculations, timezone-aware display |
-| Real-time | Native `EventSource` via custom hook | SSE over HTTP/2; no extra library needed |
-| Styles | CSS Modules + AntD design tokens | No Tailwind (conflicts with AntD theme); tokens for brand consistency |
-| i18n | react-i18next | Number/date formatting via `Intl.NumberFormat`/`Intl.DateTimeFormat` |
-| Testing | Vitest + React Testing Library + Playwright | Unit/component + e2e |
+| Framework | Angular 19 + TypeScript 5.x | Opinionated DI, reactive forms, signals for fine-grained reactivity; strong fit for large enterprise LOB apps with many contributors |
+| Build | Angular CLI + esbuild | Fast builds; HMR; production bundle with differential loading |
+| Routing | Angular Router | Lazy-loaded feature modules per domain; route guards for RBAC |
+| Server state | Angular HttpClient + RxJS | Native HTTP client; `BehaviorSubject` / signals for caching and derived state |
+| UI state | NgRx SignalStore | Lightweight signal-based store scoped per feature (session, layout, domain state) |
+| Components | PrimeNG | Data-dense enterprise library (table, tree, dialog, calendar, form fields); well-suited to treasury workflows |
+| Data grids | AG Grid Community → Enterprise | 100K+ row virtual scroll, server-side row model, column pinning, grouping, Excel export |
+| Charts | Apache ECharts via `ngx-echarts` | Waterfall (cash ladder), heatmap (FX exposure), candlestick (rate charts), bar/line for KPIs |
+| Forms | Angular Reactive Forms | `FormGroup`/`FormControl`; custom validators for IBAN, BIC, monetary amounts, value dates |
+| Date handling | date-fns 3 + date-fns-tz | Business day calculations, timezone-aware display |
+| Real-time | Native `EventSource` wrapped in Angular service | SSE over HTTP/2; injected as a singleton service; events piped to RxJS `Subject` |
+| Styles | SCSS + PrimeNG theming | PrimeNG CSS variables for brand tokens; SCSS modules for component-level styles |
+| i18n | `@ngx-translate/core` | Runtime language switching; `Intl.NumberFormat` / `Intl.DateTimeFormat` for numbers and dates |
+| Testing | Jest + Angular Testing Library + Playwright | Unit/component + E2E |
+| Packaging | `frontend-maven-plugin` + `maven-resources-plugin` | Built by Maven as part of monorepo; `dist/` copied into BFF JAR or served from CDN |
+
+---
+
+## Angular Project Structure
+
+```
+tms-ui/
+├── angular.json
+├── package.json
+├── tsconfig.json
+└── src/
+    ├── main.ts
+    ├── app/
+    │   ├── app.config.ts           # standalone bootstrap, provideRouter, provideHttpClient
+    │   ├── app.routes.ts           # top-level lazy routes
+    │   ├── core/
+    │   │   ├── auth/               # Keycloak OIDC integration, token refresh, auth guard
+    │   │   ├── http/               # HttpInterceptor: JWT header, correlation ID, error handling
+    │   │   ├── sse/                # SseService: EventSource wrapper → RxJS Observable
+    │   │   └── session/            # SessionStore (NgRx signal store): userId, roles, entityId
+    │   ├── shared/
+    │   │   ├── components/         # TmsMoneyPipe, TmsDatePipe, AmountCellRenderer, StatusBadge
+    │   │   ├── validators/         # ibanValidator, bicValidator, futureDateValidator
+    │   │   └── ag-grid/            # AG Grid column definitions, cell renderers, common grid options
+    │   └── features/
+    │       ├── cash/               # Cash Dashboard, Cash Ladder, ECF Browser, BAT Browser
+    │       ├── payments/           # Payment Queue, Create Payment, Payment Detail, Approval Inbox
+    │       ├── trades/             # Trade Blotter, Trade Capture, Trade Detail, Confirmations
+    │       ├── settlement/         # Settlement Queue, NOSTRO Recon, SSI Manager
+    │       ├── accounting/         # GL, CoA Tree, Period Management, P&L, Balance Sheet
+    │       ├── risk/               # Risk Dashboard, Limit Manager, Exposure Browser, FX NOP
+    │       ├── ihb/                # IHB Dashboard, POBO, Intercompany Loans, Netting, Statements
+    │       ├── liquidity/          # Liquidity Overview, Counterbalancing Capacity
+    │       ├── reference/          # Counterparties, Bank Accounts, Calendars, FX Rates
+    │       ├── reports/            # Report Builder, Audit Trail
+    │       ├── compliance/         # Compliance Alerts
+    │       └── admin/              # User Management, Legal Entities
+    └── environments/
+        ├── environment.ts          # local dev (points to localhost BFF)
+        └── environment.prod.ts     # production (points to gateway URL)
+```
 
 ---
 
 ## Screen Inventory
 
 ### Public / Auth
-| Screen | Route | Notes |
-|--------|-------|-------|
-| Login | `/login` | Redirects to Keycloak OIDC; PKCE flow |
-| Callback | `/callback` | Handles OIDC redirect; stores tokens in memory |
-| Unauthorized | `/403` | Role check failed after token exchange |
+| Screen | Route |
+|--------|-------|
+| Login | `/login` → redirect to Keycloak OIDC |
+| Callback | `/callback` — PKCE code exchange |
+| Unauthorized | `/403` |
 
 ### Cash Management
 | Screen | Route | Key Data |
 |--------|-------|----------|
-| Cash Dashboard | `/cash` | Cash ladder aggregate; multi-entity switcher; BFF SSE for live updates |
-| Cash Ladder | `/cash/ladder` | AG Grid: rows = accounts, cols = dates D to D+30 |
+| Cash Dashboard | `/cash` | Cash ladder aggregate; entity switcher; SSE live updates |
+| Cash Ladder | `/cash/ladder` | AG Grid: accounts × date columns D to D+30 |
 | ECF Browser | `/cash/ecf` | AG Grid server-side: filter by source, status, currency, value date |
-| BAT Browser | `/cash/bat` | AG Grid: bank transactions; MT940/CAMT.053 ingestion status |
-| Bank Statement Upload | `/cash/bat/upload` | File upload + progress; validation errors inline |
-| Cash Position Detail | `/cash/position/:accountId` | Single account; confirmed vs anticipated splits; chart |
+| BAT Browser | `/cash/bat` | AG Grid: bank transactions; ingestion status |
+| Statement Upload | `/cash/bat/upload` | File upload + progress; validation errors inline |
+| Position Detail | `/cash/position/:accountId` | Single account; confirmed vs anticipated; ECharts bar |
 
 ### Payments
 | Screen | Route | Key Data |
 |--------|-------|----------|
-| Payment Queue | `/payments` | AG Grid: real-time status (SSE); quick filters by status/currency |
-| Create Payment | `/payments/new` | Multi-step wizard (Beneficiary → Amount → Review → Submit) |
-| Payment Detail | `/payments/:id` | BFF aggregated: status, audit trail, saga steps, SWIFT messages |
-| Approval Inbox | `/payments/approvals` | Payments awaiting current user's approval; bulk approve |
+| Payment Queue | `/payments` | AG Grid; SSE status updates; quick filter bar |
+| Create Payment | `/payments/new` | Reactive Form wizard: Beneficiary → Amount → Review → Submit |
+| Payment Detail | `/payments/:id` | BFF aggregated: status, saga steps, SWIFT messages, accounting entries |
+| Approval Inbox | `/payments/approvals` | Payments pending current user; bulk approve |
 | Return/Repair | `/payments/repair` | Exception queue; edit and resubmit |
 
 ### Trades
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Trade Blotter | `/trades` | AG Grid: all active trades; filter by type/counterparty/currency/date |
-| Trade Capture | `/trades/new/:type` | Context-sensitive form per instrument type (FX, IRS, Deposit, etc.) |
-| Trade Detail | `/trades/:id` | Full lifecycle; linked settlement; accounting entries tab |
-| Confirmations | `/trades/confirmations` | AG Grid: pending/matched/disputed; match/override actions |
-| Maturity Dashboard | `/trades/maturities` | Calendar view + grid; maturing in 7/30/90 days |
+| Screen | Route |
+|--------|-------|
+| Trade Blotter | `/trades` |
+| Trade Capture | `/trades/new/:type` |
+| Trade Detail | `/trades/:id` |
+| Confirmations | `/trades/confirmations` |
+| Maturity Dashboard | `/trades/maturities` |
 
 ### Settlement
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Settlement Queue | `/settlement` | BFF aggregated queue: grouped by settle_date + currency; SSE status |
-| Settlement Detail | `/settlement/:id` | Instruction detail; netting group if applicable; SWIFT ref |
-| NOSTRO Reconciliation | `/settlement/nostro` | AG Grid: breaks, matches, aged items; resolve/escalate inline |
-| SSI Manager | `/settlement/ssi` | SSI CRUD; amendment history; effective date timeline |
+| Screen | Route |
+|--------|-------|
+| Settlement Queue | `/settlement` |
+| Settlement Detail | `/settlement/:id` |
+| NOSTRO Reconciliation | `/settlement/nostro` |
+| SSI Manager | `/settlement/ssi` |
 
 ### Accounting
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| General Ledger | `/accounting/gl` | AG Grid: journal entries; filter by ledger/CoA/period/entity |
-| Chart of Accounts | `/accounting/coa` | Tree view (class → category → subcategory → account); edit inline |
-| Period Management | `/accounting/periods` | Open/Close period controls; accrual run status |
-| P&L Report | `/accounting/pnl` | Filterable by ledger (IFRS/US_GAAP/LOCAL/MGMT), entity, period |
-| Balance Sheet | `/accounting/balance-sheet` | Same filters as P&L; drill-down by CoA node |
-| Accrual Monitor | `/accounting/accruals` | Nightly run status; per-instrument accrual amounts; error log |
+| Screen | Route |
+|--------|-------|
+| General Ledger | `/accounting/gl` |
+| Chart of Accounts | `/accounting/coa` |
+| Period Management | `/accounting/periods` |
+| P&L Report | `/accounting/pnl` |
+| Balance Sheet | `/accounting/balance-sheet` |
+| Accrual Monitor | `/accounting/accruals` |
 
 ### Risk
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Risk Dashboard | `/risk` | Gauge charts: limit utilisations; BFF SSE for live breach alerts |
-| Limit Manager | `/risk/limits` | AG Grid: all limits; create/edit/suspend; utilisation bars |
-| Exposure Browser | `/risk/exposure` | Per-counterparty/currency/maturity breakdown |
-| FX NOP Monitor | `/risk/fx-nop` | Net open position by currency pair; limit overlay |
-| Limit Override | `/risk/overrides` | Pending overrides for approval (if user has override-approver role) |
+| Screen | Route |
+|--------|-------|
+| Risk Dashboard | `/risk` |
+| Limit Manager | `/risk/limits` |
+| Exposure Browser | `/risk/exposure` |
+| FX NOP Monitor | `/risk/fx-nop` |
+| Limit Override | `/risk/overrides` |
 
 ### In-House Bank
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| IHB Dashboard | `/ihb` | Virtual account balances; pending POBO/COBO; netting status |
-| POBO Requests | `/ihb/pobo` | Subsidiary-view (via role): submit request; track status |
-| Intercompany Loans | `/ihb/loans` | Active loans; interest accruals; maturity schedule |
-| Netting Run | `/ihb/netting` | Manual trigger; net amounts preview; confirm to execute |
-| Intercompany Statement | `/ihb/statements/:subsidiaryId` | Statement per subsidiary virtual account |
+| Screen | Route |
+|--------|-------|
+| IHB Dashboard | `/ihb` |
+| POBO Requests | `/ihb/pobo` |
+| Intercompany Loans | `/ihb/loans` |
+| Netting Run | `/ihb/netting` |
+| Intercompany Statement | `/ihb/statements/:subsidiaryId` |
 
-### Liquidity
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Liquidity Overview | `/liquidity` | Short/medium/strategic horizon tabs; funding gap alerts |
-| Counterbalancing Capacity | `/liquidity/cbc` | Available liquid assets; discount haircut breakdown |
-
-### Reference Data
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Counterparties | `/reference/counterparties` | AG Grid; inline edit; SIC/BIC/LEI fields |
-| Bank Accounts | `/reference/bank-accounts` | Tree: legal entity → account; IBAN validation inline |
-| Calendars | `/reference/calendars` | Business day calendar management |
-| FX Rates | `/reference/fx-rates` | Current spot + forward; manual rate entry; approval workflow |
-
-### Reports & Compliance
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| Report Builder | `/reports` | OpenSearch-backed; filter builder; CSV/Excel export |
-| Audit Trail | `/reports/audit` | Immutable log; filter by user/action/entity |
-| Compliance Alerts | `/compliance/alerts` | Sanctions + suspicious activity alerts; resolution workflow |
-
-### Administration
-| Screen | Route | Key Data |
-|--------|-------|----------|
-| User Management | `/admin/users` | Keycloak-backed; role assignment per legal entity |
-| Legal Entities | `/admin/entities` | Entity hierarchy; base currency; calendar assignment |
+*(Liquidity, Reference Data, Reports, Compliance, Admin — same pattern)*
 
 ---
 
 ## State Management Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│  TanStack Query Cache (server state)                           │
-│  Keys: ['cash', 'ladder', entityId, date]                      │
-│        ['payments', 'list', filters]                           │
-│        ['trades', tradeId]                                     │
-│  TTL: staleTime=30s for position data; Infinity for ref data   │
-└────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  Angular HttpClient + RxJS (server state)                  │
+│  Each feature service (PaymentService, CashService, etc.)  │
+│  owns a BehaviorSubject / signal for its domain data.      │
+│  HTTP responses update the subject; components read it.    │
+└────────────────────────────────────────────────────────────┘
 
-┌────────────────────────────────────────────────────────────────┐
-│  Zustand Slices (UI state — NOT server state)                  │
-│  ├── useSessionStore: { userId, entityId, roles, token }       │
-│  ├── useLayoutStore: { sidebarCollapsed, activeTab }           │
-│  ├── usePaymentStore: { selectedPaymentIds, bulkMode }         │
-│  └── useRiskStore: { activeLimitBreachIds (SSE-fed) }          │
-└────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  NgRx SignalStore slices (UI / session state)              │
+│  SessionStore: { userId, legalEntityId, roles, token }     │
+│  LayoutStore:  { sidebarCollapsed, activeTheme }           │
+│  PaymentStore: { selectedIds, bulkMode }                   │
+│  RiskStore:    { activeLimitBreachIds }  ← fed by SSE      │
+└────────────────────────────────────────────────────────────┘
 ```
 
-Rules:
-- **Never store server data in Zustand.** Only TanStack Query owns server data.
-- **Never store UI state in TanStack Query.** Only Zustand (or local component state) owns UI decisions.
-- `useSessionStore` is initialised once at startup from Keycloak token claims. Roles drive RBAC in the UI (display/hide actions; server enforces all authorization).
+Rule: Angular services own server data (HTTP + cache). NgRx SignalStore owns UI decisions. The two never overlap.
 
 ---
 
 ## Real-Time Updates (SSE)
 
 ```typescript
-// Reusable hook
-function useSseStream<T>(endpoint: string, onMessage: (event: T) => void) {
-  const { getAccessToken } = useAuth();
-
-  useEffect(() => {
-    const es = new EventSource(endpoint, { withCredentials: true });
-    // Note: native EventSource does not support Authorization header.
-    // BFF reads token from secure httpOnly cookie set at login.
-    es.onmessage = (e) => onMessage(JSON.parse(e.data));
-    es.onerror = () => { es.close(); /* reconnect handled by retry hook */ };
-    return () => es.close();
-  }, [endpoint]);
+// core/sse/sse.service.ts
+@Injectable({ providedIn: 'root' })
+export class SseService {
+  // BFF reads the auth token from the httpOnly cookie for SSE connections
+  // (EventSource cannot set Authorization headers)
+  stream<T>(endpoint: string): Observable<T> {
+    return new Observable(observer => {
+      const es = new EventSource(endpoint, { withCredentials: true });
+      es.onmessage = (e) => observer.next(JSON.parse(e.data) as T);
+      es.onerror   = ()  => { es.close(); observer.error(new Error('SSE disconnected')); };
+      return () => es.close();
+    }).pipe(
+      retry({ delay: 5000 }),  // auto-reconnect after 5s
+    );
+  }
 }
 
-// Usage: cash position live update
-function CashDashboard() {
-  const queryClient = useQueryClient();
+// Usage in Cash Dashboard component
+@Component({ ... })
+export class CashDashboardComponent implements OnInit {
+  private sseService = inject(SseService);
+  private cashService = inject(CashService);
 
-  useSseStream<CashPositionUpdatedEvent>(
-    '/bff/v1/stream/cash-position',
-    (event) => {
-      queryClient.setQueryData(
-        ['cash', 'position', event.accountId, event.currency],
-        (old) => ({ ...old, ...event })
-      );
-    }
-  );
-  // ...
+  ngOnInit() {
+    this.sseService.stream<CashPositionUpdatedEvent>('/bff/v1/stream/cash-position')
+      .pipe(takeUntilDestroyed())
+      .subscribe(event => this.cashService.applyPositionUpdate(event));
+  }
 }
 ```
 
-SSE endpoints (all behind Spring Cloud Gateway → tms-bff WebFlux):
-| Endpoint | Emits | Consumer |
-|----------|-------|----------|
+SSE endpoints:
+| Endpoint | Emits | Consumers |
+|----------|-------|-----------|
 | `/bff/v1/stream/cash-position` | `CashPositionUpdated` | Cash Dashboard, Cash Ladder |
 | `/bff/v1/stream/payments` | `PaymentStatusChanged` | Payment Queue |
 | `/bff/v1/stream/risk-alerts` | `LimitBreachDetected` | Risk Dashboard, header bell |
-| `/bff/v1/stream/notifications` | Generic `Notification` | Header bell (all screens) |
+| `/bff/v1/stream/notifications` | `Notification` | Header bell (all screens) |
 
 ---
 
@@ -212,179 +225,195 @@ SSE endpoints (all behind Spring Cloud Gateway → tms-bff WebFlux):
 ### Server-Side Row Model (for large datasets)
 ```typescript
 // Used for: Payment Queue, Trade Blotter, ECF Browser, GL entries
-const gridOptions: GridOptions = {
-  rowModelType: 'serverSide',
-  serverSideDatasource: {
-    getRows: async (params) => {
-      const { data, totalCount } = await api.payments.list({
-        startRow: params.request.startRow,
-        endRow: params.request.endRow,
-        filterModel: params.request.filterModel,
-        sortModel: params.request.sortModel,
-      });
-      params.success({ rowData: data, rowCount: totalCount });
+@Component({ ... })
+export class PaymentQueueComponent {
+  gridOptions: GridOptions = {
+    rowModelType: 'serverSide',
+    serverSideDatasource: {
+      getRows: (params: IServerSideGetRowsParams) => {
+        this.paymentService.list({
+          startRow: params.request.startRow ?? 0,
+          endRow:   params.request.endRow   ?? 100,
+          filterModel: params.request.filterModel,
+          sortModel:   params.request.sortModel,
+        }).subscribe({
+          next: ({ data, totalCount }) =>
+            params.success({ rowData: data, rowCount: totalCount }),
+          error: () => params.fail(),
+        });
+      },
     },
-  },
-  cacheBlockSize: 100,
-  maxBlocksInCache: 10,
-};
+    cacheBlockSize: 100,
+    maxBlocksInCache: 10,
+  };
+}
 ```
 
-### Monetary amount cell renderer
+### Monetary Amount Cell Renderer
 ```typescript
-// All amount columns use this renderer — never raw number display
-const MonetaryAmountRenderer: React.FC<ICellRendererParams> = ({ value, data }) => {
-  const formatted = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: data.currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 8,
-  }).format(parseFloat(value)); // value is string from API (never float)
-  return <span style={{ textAlign: 'right' }}>{formatted}</span>;
-};
+@Component({
+  template: `<span class="amount-cell">{{ formatted }}</span>`,
+})
+export class MonetaryAmountRendererComponent implements ICellRendererAngularComp {
+  formatted = '';
+
+  agInit(params: ICellRendererParams): void {
+    this.refresh(params);
+  }
+
+  refresh(params: ICellRendererParams): boolean {
+    // value is always a string from the API — never a float
+    this.formatted = new Intl.NumberFormat(this.locale, {
+      style: 'currency',
+      currency: params.data?.currency ?? 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8,
+    }).format(parseFloat(params.value));
+    return true;
+  }
+}
 ```
 
 ---
 
-## BFF Aggregated View Contracts (UI → BFF)
+## Angular HTTP Interceptors
 
-### Payment Detail (all-in-one)
-```
-GET /bff/v1/payments/:id/detail
-Response:
-{
-  payment: { ...PaymentDTO },
-  auditTrail: AuditEntry[],
-  sagaSteps: SagaStepDTO[],
-  swiftMessages: SwiftMessageDTO[],
-  accountingEntries: JournalEntryDTO[],
-  ecfFlows: EcfFlowDTO[]
-}
-```
+```typescript
+// core/http/auth.interceptor.ts
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const session = inject(SessionStore);
+  const token   = session.accessToken();
+  return next(req.clone({
+    setHeaders: { Authorization: `Bearer ${token}` },
+  }));
+};
 
-### Cash Dashboard
-```
-GET /bff/v1/cash/dashboard?entityId=&date=
-Response:
-{
-  totalPositions: { currency, netPosition, confirmedInflows, anticipatedInflows }[],
-  cashLadder: { accountId, accountName, currency, dailyPositions: { date, amount }[] }[],
-  recentBAT: BankTransactionDTO[],
-  pendingECF: ExpectedCashFlowDTO[]
-}
-```
+// core/http/correlation.interceptor.ts
+export const correlationInterceptor: HttpInterceptorFn = (req, next) => {
+  return next(req.clone({
+    setHeaders: { 'X-Correlation-ID': crypto.randomUUID() },
+  }));
+};
 
-### Risk Dashboard
-```
-GET /bff/v1/risk/dashboard?entityId=
-Response:
-{
-  limitUtilisations: { limitId, limitType, utilisationPct, current, max, status }[],
-  activeBreach: LimitBreachDTO[],
-  fxNOP: { currencyPair, netPosition, limit, utilisationPct }[],
-  recentAlerts: RiskAlertDTO[]
-}
+// core/http/error.interceptor.ts
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) => {
+      if (err.status === 401) inject(AuthService).redirectToLogin();
+      if (err.status === 422) return throwError(() => err); // let form handle validation errors
+      inject(MessageService).add({ severity: 'error', summary: err.error?.message ?? 'Error' });
+      return throwError(() => err);
+    }),
+  );
+};
 ```
 
 ---
 
 ## Authentication Flow
 
-1. User navigates to `/` → React Router loader checks for valid token in memory
-2. No token → redirect to `/login` → redirect to Keycloak OIDC with PKCE
-3. Keycloak returns to `/callback?code=...` → exchange code for tokens
-4. Access token stored **in memory only** (never localStorage/sessionStorage — XSS risk)
-5. Refresh token stored in **secure httpOnly cookie** (BFF issues this on token exchange)
-6. BFF refreshes access token transparently using refresh token cookie
-7. All BFF calls: `Authorization: Bearer <access_token>` header
-8. SSE calls: BFF reads token from httpOnly cookie (EventSource cannot set headers)
+1. User navigates to `/` → `AuthGuard` checks for valid access token in `SessionStore`
+2. No token → redirect to `/login` → redirect to Keycloak with PKCE (`code_challenge`)
+3. Keycloak returns to `/callback?code=...` → Angular exchanges code for tokens via BFF `/auth/token`
+4. BFF stores refresh token in **httpOnly secure cookie**; returns access token in response body
+5. Access token stored **in memory only** (never `localStorage` — XSS risk)
+6. `SessionStore` holds token as a signal; `authInterceptor` reads it on every request
+7. Token refresh: interceptor checks expiry before each request; calls `/bff/v1/auth/refresh` (uses cookie automatically)
+8. SSE connections: BFF reads token from cookie (EventSource cannot send headers)
+
+---
+
+## Role-Based Rendering
 
 ```typescript
-// Token refresh (TanStack Query integration)
-const authClient = {
-  async getAccessToken(): Promise<string> {
-    if (tokenIsExpiringSoon(memoryStore.token)) {
-      const fresh = await axios.post('/bff/v1/auth/refresh'); // sends cookie automatically
-      memoryStore.token = fresh.data.accessToken;
+// core/session/session.store.ts (NgRx SignalStore)
+export const SessionStore = signalStore(
+  { providedIn: 'root' },
+  withState<SessionState>({
+    userId: '',
+    legalEntityId: '',
+    roles: [] as string[],
+    accessToken: '',
+  }),
+  withComputed(state => ({
+    hasRole: computed(() => (role: string) => state.roles().includes(role)),
+  })),
+);
+
+// Usage in component template
+@Component({
+  template: `
+    @if (session.hasRole()('PAYMENT_CHECKER') && payment.status === 'PENDING_APPROVAL') {
+      <button (click)="approve()">Approve</button>
     }
-    return memoryStore.token;
+  `,
+})
+export class PaymentActionsComponent {
+  session = inject(SessionStore);
+}
+```
+
+Frontend RBAC is a UX convenience. All authorization is enforced server-side.
+
+---
+
+## BFF Aggregated View Contracts
+
+### Payment Detail
+```
+GET /bff/v1/payments/:id/detail
+→ { payment, auditTrail, sagaSteps, swiftMessages, accountingEntries, ecfFlows }
+```
+
+### Cash Dashboard
+```
+GET /bff/v1/cash/dashboard?entityId=&date=
+→ { totalPositions, cashLadder, recentBAT, pendingECF }
+```
+
+### Risk Dashboard
+```
+GET /bff/v1/risk/dashboard?entityId=
+→ { limitUtilisations, activeBreach, fxNOP, recentAlerts }
+```
+
+---
+
+## Custom Pipes (shared)
+
+```typescript
+// shared/components/money.pipe.ts
+@Pipe({ name: 'tmsMoney', pure: true, standalone: true })
+export class TmsMoneyPipe implements PipeTransform {
+  transform(value: string, currency: string, locale = 'en-GB'): string {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency', currency,
+      minimumFractionDigits: 2, maximumFractionDigits: 8,
+    }).format(parseFloat(value)); // value is always a string from API
   }
-};
-```
-
----
-
-## Role-Based UI Rendering
-
-```typescript
-// Roles come from Keycloak token claims, scoped per legal entity
-type Role = 'TRADE_CAPTURE' | 'TRADE_APPROVE' | 'PAYMENT_INITIATE' | 'PAYMENT_APPROVE'
-          | 'RISK_VIEW' | 'RISK_LIMIT_MANAGE' | 'COMPLIANCE_VIEW' | 'COMPLIANCE_RESOLVE'
-          | 'ACCOUNTING_VIEW' | 'ACCOUNTING_POST' | 'PERIOD_CLOSE' | 'ADMIN';
-
-function useHasRole(role: Role): boolean {
-  const { roles } = useSessionStore();
-  return roles.includes(role);
 }
 
-// Usage: hide action buttons for unauthorised users
-function PaymentActions({ payment }: { payment: Payment }) {
-  const canApprove = useHasRole('PAYMENT_APPROVE');
-  return (
-    <Space>
-      {canApprove && payment.status === 'PENDING_APPROVAL' && (
-        <Button onClick={handleApprove}>Approve</Button>
-      )}
-    </Space>
-  );
-}
+// Usage in template: {{ amount | tmsMoney:currency }}
 ```
-
-Frontend RBAC is a UX convenience only. All authorization is enforced server-side.
-
----
-
-## Error Handling
-
-```typescript
-// Global error boundary + TanStack Query error handling
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error) => {
-        if (error.status === 401) return false; // trigger re-auth, not retry
-        if (error.status === 403) return false;
-        return failureCount < 3;
-      },
-      staleTime: 30_000,
-    },
-    mutations: {
-      onError: (error) => notification.error({ message: error.message }),
-    },
-  },
-});
-```
-
-HTTP 422 (validation errors from backend) are surfaced inline on form fields via React Hook Form's `setError`.
 
 ---
 
 ## Performance Patterns
 
-- **Code splitting:** Every top-level route lazy-loaded via `React.lazy` + `Suspense`
-- **AG Grid virtual scroll:** Only DOM nodes for visible rows (100K rows no problem)
-- **TanStack Query prefetch:** Prefetch detail views on list row hover (300ms debounce)
-- **Memoization:** `useMemo` on derived chart data only; avoid `memo()` by default (profile first)
-- **Date formatting:** Single `Intl.DateTimeFormat` instance per locale per render cycle, not recreated per cell
-- **Monetary display:** All amounts arrive as strings from API; parsed to `number` only for display, never stored as `number`
+- **Lazy loading:** every feature module loaded on demand via `loadChildren` (reduces initial bundle by ~70%)
+- **AG Grid virtual scroll:** only DOM rows for the visible viewport — 100K rows, no problem
+- **OnPush change detection:** all components use `ChangeDetectionStrategy.OnPush`; signals drive re-renders
+- **Memoised pipes:** `pure: true` (default) — re-runs only when inputs change
+- **Date formatting:** single `Intl.DateTimeFormat` instance per locale in `TmsDatePipe`
+- **Amount parsing:** amounts arrive as strings from API; parsed to `number` only for display, never stored as `number`
 
 ---
 
 ## Accessibility
 
-- All interactive elements keyboard-navigable
-- AntD components ship with ARIA attributes; custom components must follow suit
-- AG Grid: `aria-label` on all action buttons within grid cells
-- Colour is never the only indicator (e.g., breach status = colour + icon + text)
-- Focus trap in modal dialogs (AntD `Modal` handles this)
+- All interactive elements keyboard-navigable (Tab, Enter, Space, Escape)
+- PrimeNG components ship with ARIA attributes; custom components follow the same pattern
+- AG Grid: `ariaLabel` on all action buttons within cells
+- Colour is never the only indicator (breach status = colour + icon + text label)
+- Focus trap in modal dialogs (PrimeNG `Dialog` handles this)
 - Minimum contrast ratio 4.5:1 (WCAG AA)

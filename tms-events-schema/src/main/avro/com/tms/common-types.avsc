@@ -1,0 +1,27 @@
+[
+  {
+    "type": "record",
+    "name": "MonetaryAmountAvro",
+    "namespace": "com.tms.events.common",
+    "doc": "Amount represented as a decimal string + ISO 4217 currency code. Never use double.",
+    "fields": [
+      {"name": "amount",   "type": "string", "doc": "Decimal string, e.g. '1000000.00'"},
+      {"name": "currency", "type": "string", "doc": "ISO 4217 currency code, e.g. 'EUR'"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "EventMetadata",
+    "namespace": "com.tms.events.common",
+    "doc": "Standard envelope attached to every domain event.",
+    "fields": [
+      {"name": "eventId",        "type": "string",  "doc": "UUID v4 — idempotency key"},
+      {"name": "eventType",      "type": "string",  "doc": "Fully-qualified event name"},
+      {"name": "eventVersion",   "type": "int",     "doc": "Schema version — bump on breaking changes"},
+      {"name": "occurredAt",     "type": {"type": "long", "logicalType": "timestamp-micros"}, "doc": "Event wall-clock time (UTC)"},
+      {"name": "correlationId",  "type": "string",  "doc": "Request correlation ID"},
+      {"name": "legalEntityId",  "type": "string",  "doc": "Legal entity that owns this event (multi-tenancy)"},
+      {"name": "issuedByUserId", "type": ["null", "string"], "default": null, "doc": "User who triggered the event; null for system-generated"}
+    ]
+  }
+]

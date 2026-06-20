@@ -1,0 +1,62 @@
+[
+  {
+    "type": "record",
+    "name": "ExpectedCashFlowCreatedEvent",
+    "namespace": "com.tms.events.cash",
+    "doc": "Published when a new ECF (expected cash flow) record is created from any source.",
+    "fields": [
+      {"name": "metadata",        "type": "com.tms.events.common.EventMetadata"},
+      {"name": "ecfId",           "type": "string"},
+      {"name": "sourceType",      "type": {"type": "enum", "name": "EcfSourceType",
+        "symbols": ["PAYMENT", "TRADE_MATURITY", "TRADE_COUPON", "TRADE_FX_LEG", "MANUAL", "IMPORT"]}},
+      {"name": "sourceRef",       "type": "string",  "doc": "ID of the originating entity (payment ID, trade ID, etc.)"},
+      {"name": "accountId",       "type": "string"},
+      {"name": "amount",          "type": "com.tms.events.common.MonetaryAmountAvro"},
+      {"name": "flowDirection",   "type": {"type": "enum", "name": "FlowDirection", "symbols": ["INFLOW", "OUTFLOW"]}},
+      {"name": "valueDate",       "type": {"type": "int", "logicalType": "date"}}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "ExpectedCashFlowUpdatedEvent",
+    "namespace": "com.tms.events.cash",
+    "fields": [
+      {"name": "metadata",      "type": "com.tms.events.common.EventMetadata"},
+      {"name": "ecfId",         "type": "string"},
+      {"name": "previousStatus","type": "string"},
+      {"name": "newStatus",     "type": "string"},
+      {"name": "reason",        "type": ["null", "string"], "default": null}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "BankTransactionReceivedEvent",
+    "namespace": "com.tms.events.cash",
+    "doc": "Published when a bank transaction (BAT) is ingested from a statement file or API feed.",
+    "fields": [
+      {"name": "metadata",          "type": "com.tms.events.common.EventMetadata"},
+      {"name": "batId",             "type": "string"},
+      {"name": "accountId",         "type": "string"},
+      {"name": "amount",            "type": "com.tms.events.common.MonetaryAmountAvro"},
+      {"name": "bookingDate",       "type": {"type": "int", "logicalType": "date"}},
+      {"name": "valueDate",         "type": {"type": "int", "logicalType": "date"}},
+      {"name": "bankReference",     "type": "string"},
+      {"name": "remittanceInfo",    "type": ["null", "string"], "default": null},
+      {"name": "statementSource",   "type": "string", "doc": "e.g. MT940, CAMT053, API_DIRECT"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "CashPositionUpdatedEvent",
+    "namespace": "com.tms.events.cash",
+    "doc": "Published by tms-cash-position (CQRS read model) after recalculating a position.",
+    "fields": [
+      {"name": "metadata",           "type": "com.tms.events.common.EventMetadata"},
+      {"name": "accountId",          "type": "string"},
+      {"name": "valueDate",          "type": {"type": "int", "logicalType": "date"}},
+      {"name": "confirmedBalance",   "type": "com.tms.events.common.MonetaryAmountAvro"},
+      {"name": "anticipatedBalance", "type": "com.tms.events.common.MonetaryAmountAvro"},
+      {"name": "availableBalance",   "type": "com.tms.events.common.MonetaryAmountAvro"}
+    ]
+  }
+]

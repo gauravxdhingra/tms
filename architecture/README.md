@@ -22,8 +22,8 @@ risk, in-house banking, and reporting across multiple legal entities, ledgers, a
 | 08 | [Security & Compliance](08-security-compliance/README.md) | Auth (Keycloak/OIDC), RBAC+ABAC, audit, sanctions, SoD |
 | 09 | [Observability](09-observability/README.md) | OTel tracing, Prometheus metrics, event replay, OpenSearch reporting |
 | 10 | [Roadmap](10-roadmap/README.md) | MVP → Enterprise phased plan; risks; Phase 1 exit criteria |
-| 11 | [UI Architecture](11-ui-architecture/README.md) | React 19 SPA; screen inventory; AG Grid; real-time SSE; BFF views |
-| 12 | [Monorepo & Common Libraries](12-monorepo-common-libraries/README.md) | Gradle monorepo; 9 shared modules; CI pipeline; local dev |
+| 11 | [UI Architecture](11-ui-architecture/README.md) | Angular 19 SPA; screen inventory; AG Grid; real-time SSE; BFF views |
+| 12 | [Monorepo & Common Libraries](12-monorepo-common-libraries/README.md) | Maven multi-module; 9 shared modules; CI pipeline; local dev |
 | 13 | [Testing Strategy](13-testing-strategy/README.md) | Test pyramid; Testcontainers; saga tests; contract tests; Gatling |
 
 ---

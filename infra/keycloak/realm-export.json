@@ -1,0 +1,73 @@
+{
+  "realm": "tms",
+  "enabled": true,
+  "displayName": "TMS — Treasury Management Platform",
+  "accessTokenLifespan": 300,
+  "refreshTokenMaxReuse": 0,
+  "clients": [
+    {
+      "clientId": "tms-ui",
+      "name": "TMS Angular SPA",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*", "http://localhost:8080/*"],
+      "webOrigins": ["http://localhost:4200", "http://localhost:8080"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "tms-bff",
+      "name": "TMS BFF Service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "tms-bff-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "PAYMENT_INITIATOR",    "description": "Create payment instructions" },
+      { "name": "PAYMENT_CHECKER",      "description": "Approve or reject payments" },
+      { "name": "PAYMENT_ADMIN",        "description": "Full payment administration" },
+      { "name": "TRADE_INITIATOR",      "description": "Capture trades" },
+      { "name": "TRADE_APPROVER",       "description": "Approve trades" },
+      { "name": "SETTLEMENT_OPERATOR",  "description": "Manage settlement queues" },
+      { "name": "CASH_VIEWER",          "description": "Read-only access to cash positions" },
+      { "name": "CASH_MANAGER",         "description": "Manage ECF and positions" },
+      { "name": "RISK_VIEWER",          "description": "View risk dashboard" },
+      { "name": "RISK_LIMIT_MANAGE",    "description": "Manage risk limits" },
+      { "name": "FX_RATE_MANAGER",      "description": "Manage FX rates" },
+      { "name": "COMPLIANCE_VIEWER",    "description": "View compliance alerts" },
+      { "name": "COMPLIANCE_OPERATOR",  "description": "Action compliance alerts" },
+      { "name": "ACCOUNTING_VIEWER",    "description": "View GL and reports" },
+      { "name": "ACCOUNTING_OPERATOR",  "description": "Post manual journals" },
+      { "name": "PERIOD_CLOSE",         "description": "Open/close accounting periods" },
+      { "name": "IHB_OPERATOR",         "description": "Manage in-house bank operations" },
+      { "name": "ADMIN",                "description": "Platform administration" }
+    ]
+  },
+  "users": [
+    {
+      "username": "initiator",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["PAYMENT_INITIATOR", "CASH_VIEWER", "TRADE_INITIATOR"]
+    },
+    {
+      "username": "checker",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["PAYMENT_CHECKER", "SETTLEMENT_OPERATOR", "TRADE_APPROVER"]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["ADMIN", "PAYMENT_ADMIN", "ACCOUNTING_OPERATOR", "PERIOD_CLOSE"]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "/__admin/health"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"status\":\"ok\"}",
+        "headers": { "Content-Type": "application/json" }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "urlPattern": "/swift/v1/payments/.*"
+      },
+      "response": {
+        "status": 202,
+        "body": "{\"uetr\":\"{{randomValue type='UUID'}}\",\"status\":\"ACCEPTED\"}",
+        "headers": { "Content-Type": "application/json" },
+        "transformers": ["response-template"]
+      }
+    }
+  ]
+}

@@ -44,20 +44,20 @@
 
 | Layer | Choice | Justification |
 |-------|--------|---------------|
-| Language | TypeScript | Type safety for financial data models (amount, currency, date fields must be explicit) |
-| Framework | React 19 | Component model, hooks, concurrent features for real-time updates |
-| Build | Vite | Fast HMR, ES module native, production bundle optimisation |
+| Language | TypeScript 5.x | Type safety for financial data models (amount, currency, date fields must be explicit) |
+| Framework | Angular 19 | Opinionated, batteries-included framework well-suited to enterprise LOB apps; strong DI, reactive forms, robust HTTP client, signals for fine-grained reactivity |
+| Build | Angular CLI + esbuild | Default Angular toolchain; esbuild for fast builds and HMR |
 | Data grid | AG Grid (Community or Enterprise) | Handles 100K+ row treasury data tables with virtual scrolling, column grouping, frozen columns, Excel export. Industry standard for financial UIs. |
-| Charts | Recharts + Apache ECharts | Recharts for standard charts; ECharts for waterfall charts (cash ladder), heatmaps (FX exposure), and candlestick (rate charts) |
-| Server state | TanStack Query (React Query) | Cache management, background refetch, pagination, optimistic updates for approval workflows |
-| UI state | Zustand | Lightweight, no boilerplate, sufficient for treasury UI state (active filters, selected entities, open panels) |
-| Component library | Ant Design | Data-dense enterprise component library; good table, form, and layout primitives for treasury workflows |
-| Real-time | Server-Sent Events (SSE) via BFF | For cash position and payment status updates. SSE preferred over WebSocket because updates are server-push only (no bidirectional needed). `EventSource` API in the browser. |
-| Routing | React Router v7 | File-based routing, nested layouts, loader functions for data-parallel fetching |
-| Forms | React Hook Form + Zod | Performant forms for payment creation, trade capture, approval workflows; Zod for schema-validated form data |
-| Date handling | date-fns | Lightweight, tree-shakeable, immutable date utilities. `date-fns-tz` for timezone-aware treasury date display. |
-| Internationalisation | react-i18next | Multi-language support (English, German, French, Spanish minimum for European treasury) |
-| Testing | Vitest + React Testing Library + Playwright | Vitest for unit/component tests, Playwright for E2E |
+| Charts | Apache ECharts via ngx-echarts | Waterfall charts (cash ladder), heatmaps (FX exposure), candlestick (rate charts), bar/line KPI charts |
+| Server state | Angular HttpClient + RxJS | Native HTTP client; BehaviorSubject / signals for derived state; no extra library needed |
+| UI state | NgRx SignalStore (or RxJS services) | Lightweight signal-based state management for treasury UI state (active entity, filters, open panels) |
+| Component library | PrimeNG or Angular Material | PrimeNG preferred for data-dense treasury UIs (table, tree, dialog, form field components); Angular Material as alternative |
+| Real-time | Server-Sent Events (SSE) via BFF | `EventSource` wrapped in an Angular service; updates piped to RxJS `Subject` consumed by components |
+| Routing | Angular Router | Lazy-loaded feature modules per domain (Payments, Cash, Trades, Settlement, etc.) |
+| Forms | Angular Reactive Forms | `FormGroup` / `FormControl` with custom validators for IBAN, BIC, monetary amounts, value dates |
+| Date handling | date-fns + date-fns-tz | Lightweight, tree-shakeable, immutable date utilities for business day and timezone-aware display |
+| Internationalisation | Angular i18n / ngx-translate | Multi-language support (English, German, French, Spanish minimum for European treasury) |
+| Testing | Jest + Angular Testing Library + Playwright | Jest for unit/component tests, Playwright for E2E |
 | Accessibility | WCAG 2.1 AA | Required for enterprise software in EU/UK jurisdictions |
 
 ### BFF Technology
@@ -147,16 +147,17 @@ tms-stubs/
 
 WireMock stubs are loaded from JSON mapping files. Each stub has a `__admin` API for dynamic scenario switching during development.
 
-### Layer 3: Selective Service Startup (Gradle tasks)
+### Layer 3: Selective Service Startup (Maven)
 ```bash
-# Run only what you need for the payment flow:
-./gradlew :tms-payment-hub:bootRun \
-          :tms-cash-ecf:bootRun \
-          :tms-reference-data:bootRun \
-          --parallel
+# Run a single service:
+mvn -pl tms-payment-hub spring-boot:run -Dspring-boot.run.profiles=local
 
-# Run the full Phase 1 slice:
-./gradlew runPhase1 --parallel
+# Run multiple services in parallel (separate terminals or via process-compose):
+mvn -pl tms-payment-hub,tms-cash-ecf,tms-reference-data spring-boot:run \
+    -Dspring-boot.run.profiles=local
+
+# Build all modules (skip tests for speed):
+mvn install -DskipTests --threads 4
 ```
 
 ### Spring Profiles per Environment
@@ -355,10 +356,11 @@ class PaymentService {
 
 | Tool | Usage |
 |------|-------|
-| Build | Gradle 8.x, multi-module monorepo, one subproject per service + shared libraries |
-| Avro codegen | `gradle-avro-plugin` — generates Java classes from `.avsc` files in `tms-events-schema` |
+| Build (backend) | Maven 3.9.x, multi-module POM, one module per service + shared libraries |
+| Avro codegen | `avro-maven-plugin` — generates Java classes from `.avsc` files in `tms-events-schema` |
 | DMN bundling | DMN files from DB for runtime; Git-tracked `.dmn` files as the authoritative source |
-| Containers | Jib (no Dockerfile required per service — Gradle plugin) |
+| Containers | `jib-maven-plugin` (no Dockerfile required per service) |
+| Build (frontend) | Angular CLI (`ng build`) — invoked from Maven via `frontend-maven-plugin` |
 | CI | GitHub Actions (or GitLab CI / Jenkins): build → test → contract-test → scan → push image |
 | CD | ArgoCD (GitOps): PR-based promotion dev → staging → UAT → prod |
 | Contract testing | Spring Cloud Contract (REST), Avro Schema Registry compatibility checks (Kafka) |
@@ -367,6 +369,59 @@ class PaymentService {
 | SAST | SpotBugs + SonarQube (financial code quality gates: no floating-point money, no direct `LocalDate.now()`) |
 | Secret scanning | truffleHog or GitGuardian in CI pre-merge |
 | Image signing | Cosign (Sigstore) — all images signed before push; admission webhook verifies signature |
+
+### Maven Multi-Module Structure
+```
+tms/                              (root POM — parent for all modules)
+├── pom.xml
+├── tms-events-schema/pom.xml
+├── tms-common-audit/pom.xml
+├── tms-common-outbox/pom.xml
+├── tms-common-idempotency/pom.xml
+├── tms-common-security/pom.xml
+├── tms-common-money/pom.xml
+├── tms-common-validation/pom.xml
+├── tms-common-messaging/pom.xml
+├── tms-common-test/pom.xml
+├── tms-payment-hub/pom.xml
+├── tms-trade/pom.xml
+...                               (all 20 services)
+└── tms-ui/                       (Angular SPA — built via frontend-maven-plugin)
+    ├── package.json
+    ├── angular.json
+    └── src/
+```
+
+Root POM manages all dependency versions via `<dependencyManagement>`. Spring Boot parent POM is imported as a BOM:
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-dependencies</artifactId>
+      <version>${spring-boot.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-dependencies</artifactId>
+      <version>${spring-cloud.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+Common build plugins declared once in root POM `<pluginManagement>`:
+- `maven-compiler-plugin` (Java 21, `--enable-preview` for virtual threads)
+- `spring-boot-maven-plugin` (repackage for service modules)
+- `jib-maven-plugin` (container images, configured per service module)
+- `avro-maven-plugin` (Avro codegen in `tms-events-schema`)
+- `flyway-maven-plugin` (for local DB migration tasks)
+- `jacoco-maven-plugin` (coverage reporting)
+- `frontend-maven-plugin` (Node/npm/Angular CLI for `tms-ui`)
 
 ### SonarQube Quality Gates (financial-specific)
 Custom rules added to standard quality gate:
@@ -420,5 +475,5 @@ POST /api/v1/import/users               (user accounts and roles)
 | Spring WebFlux everywhere | Virtual threads close the throughput gap; blocking is simpler to debug; Batch needs blocking |
 | Drools (Red Hat) | Camunda DMN is Apache-licensed, lighter, and standard-compliant (DMN 1.3); Drools requires commercial licence for enterprise features |
 | Temporal (workflow engine) | Adds an external dependency for saga orchestration; Spring + PostgreSQL + Kafka provides sufficient saga primitives without the operational overhead |
-| Vue / Angular (UI) | React has the widest pool of enterprise-finance frontend engineers; AG Grid React integration is best-in-class |
+| React (UI) | Angular's opinionated DI, reactive forms, and strong TypeScript integration make it better suited to large enterprise LOB apps with many developers; AG Grid Angular integration is equally best-in-class |
 | WebSocket for real-time | SSE is simpler (HTTP/1.1 compatible, no upgrade handshake, natural backpressure); treasury updates are server-push only |

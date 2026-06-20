@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.tms</groupId>
+  <artifactId>tms-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>TMS — Treasury Management Platform</name>
+  <description>Production-grade, event-driven Treasury Management Platform</description>
+
+  <!-- ── Module registry ──────────────────────────────────────────────────── -->
+  <modules>
+    <!-- Shared libraries (build first — no Spring Boot dependency) -->
+    <module>tms-events-schema</module>
+    <module>tms-common-money</module>
+    <module>tms-common-validation</module>
+    <module>tms-common-audit</module>
+    <module>tms-common-outbox</module>
+    <module>tms-common-idempotency</module>
+    <module>tms-common-security</module>
+    <module>tms-common-messaging</module>
+    <module>tms-common-test</module>
+
+    <!-- Config server (must start before other services) -->
+    <module>tms-config-server</module>
+
+    <!-- Domain services -->
+    <module>tms-reference-data</module>
+    <module>tms-bank-accounts</module>
+    <module>tms-fx-rates</module>
+    <module>tms-rules-engine</module>
+    <module>tms-compliance</module>
+    <module>tms-payment-hub</module>
+    <module>tms-cash-ecf</module>
+    <module>tms-cash-bat</module>
+    <module>tms-cash-position</module>
+    <module>tms-trade</module>
+    <module>tms-confirmation-matching</module>
+    <module>tms-settlement</module>
+    <module>tms-accounting</module>
+    <module>tms-risk</module>
+    <module>tms-ihb</module>
+    <module>tms-liquidity</module>
+    <module>tms-reconciliation</module>
+    <module>tms-notifications</module>
+
+    <!-- Platform layer -->
+    <module>tms-bff</module>
+    <module>tms-gateway</module>
+
+    <!-- Frontend (last — depends on Node/npm being available) -->
+    <module>tms-ui</module>
+  </modules>
+
+  <!-- ── Version catalog ──────────────────────────────────────────────────── -->
+  <properties>
+    <java.version>21</java.version>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Core frameworks -->
+    <spring-boot.version>3.4.1</spring-boot.version>
+    <spring-cloud.version>2024.0.0</spring-cloud.version>
+
+    <!-- Data -->
+    <flyway.version>10.21.0</flyway.version>
+    <jooq.version>3.19.15</jooq.version>
+
+    <!-- Messaging / serialization -->
+    <avro.version>1.12.0</avro.version>
+    <confluent.version>7.8.0</confluent.version>
+
+    <!-- Money -->
+    <moneta.version>1.4.4</moneta.version>
+
+    <!-- Observability -->
+    <opentelemetry-bom.version>1.44.1</opentelemetry-bom.version>
+    <micrometer.version>1.14.2</micrometer.version>
+
+    <!-- Testing -->
+    <testcontainers.version>1.20.4</testcontainers.version>
+    <archunit.version>1.3.0</archunit.version>
+    <wiremock.version>3.10.0</wiremock.version>
+    <rest-assured.version>5.5.0</rest-assured.version>
+    <awaitility.version>4.2.2</awaitility.version>
+    <gatling.version>3.13.1</gatling.version>
+
+    <!-- Build plugins -->
+    <jib.version>3.4.4</jib.version>
+    <avro-maven-plugin.version>1.12.0</avro-maven-plugin.version>
+    <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+    <jacoco.version>0.8.12</jacoco.version>
+    <maven-surefire.version>3.5.2</maven-surefire.version>
+    <maven-failsafe.version>3.5.2</maven-failsafe.version>
+
+    <!-- Node / npm versions pinned for frontend-maven-plugin -->
+    <node.version>v22.13.0</node.version>
+    <npm.version>10.9.2</npm.version>
+
+    <!-- Container registry — override in CI via -Djib.registry=... -->
+    <jib.registry>localhost:5000</jib.registry>
+    <jib.base-image>eclipse-temurin:21-jre-alpine</jib.base-image>
+  </properties>
+
+  <!-- ── BOM imports — all transitive version management ──────────────────── -->
+  <dependencyManagement>
+    <dependencies>
+      <!-- Spring Boot BOM -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Spring Cloud BOM -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Testcontainers BOM -->
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- OpenTelemetry BOM -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ── TMS shared library versions ──────────────────────────────── -->
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-events-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-money</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-validation</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-audit</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-outbox</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-idempotency</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-security</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-messaging</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tms</groupId>
+        <artifactId>tms-common-test</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- ── Third-party versions not in Spring Boot BOM ──────────────── -->
+      <dependency>
+        <groupId>org.javamoney</groupId>
+        <artifactId>moneta</artifactId>
+        <version>${moneta.version}</version>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${avro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-avro-serializer</artifactId>
+        <version>${confluent.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock</artifactId>
+        <version>${wiremock.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${rest-assured.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <!-- ── Common dependencies for ALL modules ──────────────────────────────── -->
+  <dependencies>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <!-- ── Plugin management — all versions pinned here ─────────────────────── -->
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <!-- Compiler: Java 21, enable preview for records/sealed in future -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+          <configuration>
+            <release>${java.version}</release>
+            <parameters>true</parameters>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
+        </plugin>
+
+        <!-- Spring Boot repackage (only applied in service modules, not shared libs) -->
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+          <configuration>
+            <excludes>
+              <exclude>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+              </exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+
+        <!-- Avro code generation from .avsc schema files -->
+        <plugin>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro-maven-plugin</artifactId>
+          <version>${avro-maven-plugin.version}</version>
+          <configuration>
+            <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
+            <outputDirectory>${project.build.directory}/generated-sources/avro</outputDirectory>
+            <stringType>String</stringType>
+            <enableDecimalLogicalType>true</enableDecimalLogicalType>
+            <gettersReturnOptional>true</gettersReturnOptional>
+          </configuration>
+          <executions>
+            <execution>
+              <goals><goal>schema</goal></goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- Jib: build container images without Dockerfile, no Docker daemon needed in CI -->
+        <plugin>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <version>${jib.version}</version>
+          <configuration>
+            <from>
+              <image>${jib.base-image}</image>
+            </from>
+            <to>
+              <image>${jib.registry}/tms/${project.artifactId}:${project.version}</image>
+            </to>
+            <container>
+              <jvmFlags>
+                <!-- Virtual threads / structured concurrency -->
+                <jvmFlag>-XX:+UseZGC</jvmFlag>
+                <jvmFlag>-XX:+ZGenerational</jvmFlag>
+                <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
+              </jvmFlags>
+              <ports><port>8080</port></ports>
+              <environment>
+                <SPRING_PROFILES_ACTIVE>prod</SPRING_PROFILES_ACTIVE>
+              </environment>
+            </container>
+          </configuration>
+        </plugin>
+
+        <!-- JaCoCo: coverage, minimum 80% line coverage enforced in verify phase -->
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.version}</version>
+          <executions>
+            <execution>
+              <id>prepare-agent</id>
+              <goals><goal>prepare-agent</goal></goals>
+            </execution>
+            <execution>
+              <id>report</id>
+              <phase>verify</phase>
+              <goals><goal>report</goal></goals>
+            </execution>
+            <execution>
+              <id>check</id>
+              <phase>verify</phase>
+              <goals><goal>check</goal></goals>
+              <configuration>
+                <rules>
+                  <rule>
+                    <element>BUNDLE</element>
+                    <limits>
+                      <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>0.80</minimum>
+                      </limit>
+                    </limits>
+                  </rule>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- Surefire: unit tests -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven-surefire.version}</version>
+          <configuration>
+            <excludes>
+              <exclude>**/*IT.java</exclude>
+              <exclude>**/*IntegrationTest.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+
+        <!-- Failsafe: integration tests (mvn verify -P integration-test) -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${maven-failsafe.version}</version>
+          <configuration>
+            <includes>
+              <include>**/*IT.java</include>
+              <include>**/*IntegrationTest.java</include>
+            </includes>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- Flyway: schema migrations (run as part of service startup, not Maven) -->
+        <plugin>
+          <groupId>org.flywaydb</groupId>
+          <artifactId>flyway-maven-plugin</artifactId>
+          <version>${flyway.version}</version>
+        </plugin>
+
+        <!-- Frontend: Node + npm lifecycle for tms-ui module -->
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+          <version>${frontend-maven-plugin.version}</version>
+          <configuration>
+            <nodeVersion>${node.version}</nodeVersion>
+            <npmVersion>${npm.version}</npmVersion>
+            <workingDirectory>${project.basedir}</workingDirectory>
+            <installDirectory>${project.basedir}/.node</installDirectory>
+          </configuration>
+        </plugin>
+
+        <!-- Resources plugin: used in tms-ui to copy dist into BFF jar -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- ── Profiles ─────────────────────────────────────────────────────────── -->
+  <profiles>
+    <!-- Integration tests: mvn verify -P integration-test -->
+    <profile>
+      <id>integration-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Container build: mvn package -P container -->
+    <profile>
+      <id>container</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals><goal>build</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <!-- Confluent Schema Registry artifacts not in Maven Central -->
+  <repositories>
+    <repository>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+</project>

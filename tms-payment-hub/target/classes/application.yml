@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: tms-payment-hub
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tms}
+    username: ${DB_USER:tms}
+    password: ${DB_PASSWORD:tms}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: tms-payment-hub-pool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+    consumer:
+      group-id: tms-payment-hub
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      auto-offset-reset: earliest
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        specific.avro.reader: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/tms}
+
+server:
+  port: 8081
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      service: tms-payment-hub
+      env: ${SPRING_PROFILES_ACTIVE:local}
+
+tms:
+  outbox:
+    relay:
+      enabled: true
+      interval-ms: 500
+  idempotency:
+    key-ttl: 24h
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tms
+    username: tms
+    password: tms
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  data:
+    redis:
+      host: localhost
+
+logging:
+  level:
+    com.tms: DEBUG
+    org.springframework.kafka: INFO

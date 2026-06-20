@@ -1,0 +1,80 @@
+[
+  {
+    "type": "record",
+    "name": "PaymentInitiatedEvent",
+    "namespace": "com.tms.events.payment",
+    "doc": "Published when a payment instruction is created and passes initial validation.",
+    "fields": [
+      {"name": "metadata",          "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",         "type": "string",  "doc": "UUID of the payment instruction"},
+      {"name": "paymentType",       "type": {"type": "enum", "name": "PaymentType", "symbols": ["WIRE", "ACH", "SEPA_CT", "SEPA_DD", "SWIFT_MT103", "INTERNAL", "BOOK"]}},
+      {"name": "amount",            "type": "com.tms.events.common.MonetaryAmountAvro"},
+      {"name": "valueDate",         "type": {"type": "int",  "logicalType": "date"}, "doc": "ISO-8601 date the payment settles"},
+      {"name": "debitAccountId",    "type": "string"},
+      {"name": "creditAccountId",   "type": ["null", "string"], "default": null, "doc": "Null for external beneficiary payments"},
+      {"name": "beneficiaryIban",   "type": ["null", "string"], "default": null},
+      {"name": "beneficiaryBic",    "type": ["null", "string"], "default": null},
+      {"name": "beneficiaryName",   "type": ["null", "string"], "default": null},
+      {"name": "remittanceInfo",    "type": ["null", "string"], "default": null},
+      {"name": "idempotencyKey",    "type": "string",  "doc": "Client-supplied Idempotency-Key header value"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentStatusChangedEvent",
+    "namespace": "com.tms.events.payment",
+    "doc": "Published on every status transition of a payment instruction.",
+    "fields": [
+      {"name": "metadata",      "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",     "type": "string"},
+      {"name": "previousStatus","type": "string"},
+      {"name": "newStatus",     "type": "string"},
+      {"name": "reason",        "type": ["null", "string"], "default": null, "doc": "Rejection or cancellation reason"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentApprovedEvent",
+    "namespace": "com.tms.events.payment",
+    "fields": [
+      {"name": "metadata",    "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",   "type": "string"},
+      {"name": "approvedByUserId", "type": "string"},
+      {"name": "approvedAt",  "type": {"type": "long", "logicalType": "timestamp-micros"}}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentRejectedEvent",
+    "namespace": "com.tms.events.payment",
+    "fields": [
+      {"name": "metadata",          "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",         "type": "string"},
+      {"name": "rejectedByUserId",  "type": "string"},
+      {"name": "reason",            "type": "string"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentSentToNetworkEvent",
+    "namespace": "com.tms.events.payment",
+    "doc": "Published when the SWIFT/SEPA/ACH message is dispatched to the network adapter.",
+    "fields": [
+      {"name": "metadata",        "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",       "type": "string"},
+      {"name": "networkReference","type": ["null", "string"], "default": null, "doc": "SWIFT UETR or network TXID"},
+      {"name": "channelUsed",     "type": "string", "doc": "e.g. SWIFT_BUREAU, SEPA_GATEWAY, ACH_CONNECTOR"}
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentSettledEvent",
+    "namespace": "com.tms.events.payment",
+    "fields": [
+      {"name": "metadata",          "type": "com.tms.events.common.EventMetadata"},
+      {"name": "paymentId",         "type": "string"},
+      {"name": "settlementReference","type": "string"},
+      {"name": "settledAt",         "type": {"type": "long", "logicalType": "timestamp-micros"}}
+    ]
+  }
+]
