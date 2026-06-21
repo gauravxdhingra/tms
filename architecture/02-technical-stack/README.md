@@ -1,7 +1,7 @@
 # 02 — Technical Stack (v2)
 
 ## What Changed from v1
-- Added UI stack (React, TypeScript, AG Grid, BFF pattern, SSE/WebSocket)
+- Added UI stack (Angular 19, TypeScript, AG Grid, BFF pattern, SSE/WebSocket)
 - Added SWIFT connectivity model (Bureau vs Alliance options)
 - Added local development story (Docker Compose, service stubs, Spring profiles)
 - Added `Clock` injection pattern as a mandatory cross-cutting standard
@@ -18,16 +18,16 @@
 | Layer | Choice | Version | Justification |
 |-------|--------|---------|---------------|
 | Language | Java | 21 LTS | Virtual threads (Loom), records, sealed classes, pattern matching. LTS support horizon matches enterprise finance lifecycle. |
-| Runtime | Spring Boot | 4.x | Native virtual thread support, AOT compilation, Jakarta EE 11. |
-| Web layer | Spring WebMVC (blocking) | aligned with Boot 4 | Virtual threads make blocking I/O equivalent in throughput to reactive. Simpler debugging. Matches Spring Batch needs. **Exception:** `tms-bff` uses WebFlux for SSE streaming endpoints only. |
-| Cloud | Spring Cloud | 2025.x | Config Server, Gateway, Circuit Breaker (Resilience4j), Contract. |
-| Security | Spring Security | 7.x | OAuth2 resource server, OIDC, RBAC/ABAC, method security, JWT validation. |
-| Data (JPA) | Spring Data JPA + Hibernate | 7.x | Entity mapping, optimistic locking, auditing. |
-| Data (JDBC) | Spring Data JDBC / JdbcTemplate | 4.x | Bulk insert paths, batch processing, raw SQL where JPA adds overhead. |
+| Runtime | Spring Boot | 3.4.1 | Virtual thread support (Loom), Jakarta EE 10. |
+| Web layer | Spring WebMVC (blocking) | aligned with Boot 3.4 | Virtual threads make blocking I/O equivalent in throughput to reactive. Simpler debugging. Matches Spring Batch needs. **Exception:** `tms-bff` uses WebFlux for SSE streaming endpoints only. |
+| Cloud | Spring Cloud | 2024.0.0 | Config Server, Gateway, Circuit Breaker (Resilience4j), Contract. |
+| Security | Spring Security | 6.x | OAuth2 resource server, OIDC, RBAC/ABAC, method security, JWT validation. |
+| Data (JPA) | Spring Data JPA + Hibernate | 6.x | Entity mapping, optimistic locking, auditing. |
+| Data (JDBC) | Spring Data JDBC / JdbcTemplate | 3.x | Bulk insert paths, batch processing, raw SQL where JPA adds overhead. |
 | Batch | Spring Batch | 5.x | Bank statement ingestion, bulk payment files, reconciliation jobs, accrual posting runs. Restartable, partitioned, chunk-oriented. |
-| Messaging (Kafka) | Spring Kafka | 4.x | `@KafkaListener`, consumer groups, exactly-once, DLT routing. |
-| Messaging (RabbitMQ) | Spring AMQP | 4.x | Command queues, delayed retries, approval workflow, DLX. |
-| Cache | Spring Data Redis + Redisson | 4.x | `@Cacheable`, distributed locks, idempotency store. |
+| Messaging (Kafka) | Spring Kafka | 3.x | `@KafkaListener`, consumer groups, exactly-once, DLT routing. |
+| Messaging (RabbitMQ) | Spring AMQP | 3.x | Command queues, delayed retries, approval workflow, DLX. |
+| Cache | Spring Data Redis + Redisson | 3.x | `@Cacheable`, distributed locks, idempotency store. |
 | gRPC | `grpc-spring-boot-starter` | — | Rules Engine, Identity token check, Risk pre-trade limit check — high-frequency internal calls. |
 | API docs | SpringDoc OpenAPI 3.1 | — | Auto-generated, versioned. |
 | Serialization (REST) | Jackson | 2.x | JSON for REST. Custom `MonetaryAmountSerializer`. |
@@ -475,5 +475,5 @@ POST /api/v1/import/users               (user accounts and roles)
 | Spring WebFlux everywhere | Virtual threads close the throughput gap; blocking is simpler to debug; Batch needs blocking |
 | Drools (Red Hat) | Camunda DMN is Apache-licensed, lighter, and standard-compliant (DMN 1.3); Drools requires commercial licence for enterprise features |
 | Temporal (workflow engine) | Adds an external dependency for saga orchestration; Spring + PostgreSQL + Kafka provides sufficient saga primitives without the operational overhead |
-| React (UI) | Angular's opinionated DI, reactive forms, and strong TypeScript integration make it better suited to large enterprise LOB apps with many developers; AG Grid Angular integration is equally best-in-class |
+| React (UI) | Angular 19's opinionated DI, reactive forms, signals, and strong TypeScript integration make it better suited to large enterprise LOB apps with many developers; AG Grid Angular integration is equally best-in-class |
 | WebSocket for real-time | SSE is simpler (HTTP/1.1 compatible, no upgrade handshake, natural backpressure); treasury updates are server-push only |

@@ -438,7 +438,7 @@ One consumer group per (service, topic) pair. Each service gets independent offs
 
 ## BFF Kafka Subscription (Real-Time SSE)
 
-The BFF subscribes to short-lived, high-frequency topics for pushing real-time updates to the React UI via SSE:
+The BFF subscribes to short-lived, high-frequency topics for pushing real-time updates to the Angular UI via SSE:
 
 ```
 tms.cash.position.intraday       → CashPositionView per account (refreshed every 15s)

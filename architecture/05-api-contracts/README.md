@@ -9,7 +9,7 @@
 - Accounting API extended: Chart of Accounts management, accrual queries, multi-GAAP endpoints
 - Liquidity API extended: multi-horizon views, limit monitoring, scenario queries
 - Settlement API extended: SSI lifecycle, netting, CLS, NOSTRO recon status
-- BFF API added: aggregated views for the React UI
+- BFF API added: aggregated views for the Angular UI
 - API versioning rules made explicit
 
 ---

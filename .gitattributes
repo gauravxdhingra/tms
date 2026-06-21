@@ -1,0 +1,37 @@
+# Normalize line endings: all text files use LF in the repository.
+# This prevents CRLF issues when moving between macOS and Linux (EC2).
+
+* text=auto eol=lf
+
+# Shell scripts must be LF — CRLF will break bash on Linux
+*.sh text eol=lf
+
+# Java, XML, YAML, JSON, properties — always LF
+*.java    text eol=lf
+*.xml     text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.properties text eol=lf
+*.avsc    text eol=lf
+*.sql     text eol=lf
+*.md      text eol=lf
+*.txt     text eol=lf
+*.gitignore text eol=lf
+*.gitattributes text eol=lf
+
+# Binary files — no line-ending normalization
+*.jar     binary
+*.class   binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.ico     binary
+*.gif     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+*.p12     binary
+*.jks     binary
+*.keystore binary

@@ -12,7 +12,7 @@ risk, in-house banking, and reporting across multiple legal entities, ledgers, a
 
 | # | Document | Description |
 |---|----------|-------------|
-| 01 | [Bounded Context Map](01-bounded-contexts/README.md) | 20 deployable services, context map, ownership, multi-tenancy |
+| 01 | [Bounded Context Map](01-bounded-contexts/README.md) | 19 deployable services, context map, ownership, multi-tenancy |
 | 02 | [Technical Stack](02-technical-stack/README.md) | Technology choices with justifications; frontend, SWIFT, local dev |
 | 03 | [Event Model](03-event-model/README.md) | 17 event domains, Avro schemas, outbox pattern, idempotency |
 | 04 | [Messaging Topology](04-messaging-topology/README.md) | 50+ Kafka topics, RabbitMQ exchanges/queues, BFF SSE subscriptions |
@@ -46,7 +46,7 @@ risk, in-house banking, and reporting across multiple legal entities, ledgers, a
 ## Architecture at a Glance
 
 ```
-Browser (React 19 SPA)
+Browser (Angular 19 SPA)
     │
     ├── REST  ──► Spring Cloud Gateway ──► tms-bff ──┬──► tms-payment-hub
     └── SSE   ──► tms-bff (WebFlux)                  ├──► tms-trade
@@ -54,7 +54,7 @@ Browser (React 19 SPA)
                                                       ├──► tms-risk
                                                       └──► (all other services)
 
-Domain Services (20 total):
+Domain Services (19 total — Keycloak is an external service, not a TMS module):
   Cash:        tms-cash-ecf | tms-cash-bat | tms-cash-position
   Payments:    tms-payment-hub
   Trades:      tms-trade | tms-confirmation-matching

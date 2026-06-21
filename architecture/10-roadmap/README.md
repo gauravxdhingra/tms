@@ -15,7 +15,7 @@ Basic payments             NOSTRO reconciliation          Multi-ledger accountin
   (SWIFT stub)             Confirmation matching          Multi-GAAP (IFRS / US GAAP)
 ECF + BAT ingestion        Accounting + CoA               Hedge accounting
 Cash position (ladder)     Accrual engine                 Full risk management
-BFF + React UI             Compliance (live sanctions)    DV01, PSR, IR gap
+BFF + Angular UI           Compliance (live sanctions)    DV01, PSR, IR gap
 Audit trail                Risk (limits + exposure)       FX NOP monitor
 Basic observability        FX rates + revaluation         Liquidity planning
                            Bank recon saga                Strategic cash forecasting
@@ -43,7 +43,7 @@ A treasury team can create payments, approve them via maker-checker, track them 
 - [ ] RabbitMQ 3.13 (Quorum queues, x-delayed-message plugin)
 - [ ] Redis 7 Sentinel
 - [ ] MinIO (4-node erasure-coded, WORM bucket for audit)
-- [ ] Keycloak 25 (tms-realm + tms-system-realm, PKCE config, service accounts)
+- [ ] Keycloak 26.2 (tms-realm + tms-system-realm, PKCE config, service accounts)
 - [ ] HashiCorp Vault (dynamic PostgreSQL credentials, KV v2 for app secrets)
 - [ ] Spring Cloud Config Server + Git-backed config repo
 - [ ] Spring Cloud Gateway (JWT validation, correlation ID injection, rate limiting)
@@ -102,7 +102,7 @@ A treasury team can create payments, approve them via maker-checker, track them 
 
 ### Sprints 10–11 (Weeks 21–24): UI + Audit + Hardening
 
-- [ ] `tms-ui` React SPA: Payment Queue, Payment Detail, Create Payment wizard, Cash Dashboard, Cash Ladder, Approval Inbox
+- [ ] `tms-ui` Angular SPA: Payment Queue, Payment Detail, Create Payment wizard, Cash Dashboard, Cash Ladder, Approval Inbox
 - [ ] BFF SSE: real-time payment status updates in Payment Queue
 - [ ] Immutable audit log (hash chaining, outbox → Kafka → OpenSearch `tms-audit-events-*`)
 - [ ] WORM MinIO bucket — Kafka Connect S3 Sink for 7-year audit retention
@@ -352,7 +352,7 @@ Stream-aligned teams (end-to-end ownership):
           tms-reference-data, tms-bff, tms-gateway, tms-config-server
 
   Team: UI
-    owns: tms-ui (React SPA, design system, BFF view contracts)
+    owns: tms-ui (Angular SPA, design system, BFF view contracts)
 
 Enabling teams:
   Platform Engineering — Kubernetes, Kafka, PostgreSQL, CI/CD, Vault, MinIO
@@ -377,7 +377,7 @@ Enabling teams:
 
 ### R4: Avro Schema Evolution Breaking Consumers
 **Risk:** A schema change in a producer breaks existing consumers.
-**Mitigation:** Schema Registry enforces BACKWARD compatibility before every deployment. `checkSchemaCompatibility` Gradle task runs in CI. All new fields have defaults. Spring Cloud Contract consumer tests run against provider-generated stubs.
+**Mitigation:** Schema Registry enforces BACKWARD compatibility before every deployment. Schema compatibility is verified in CI via `mvn exec:java` against the Schema Registry API. All new fields have defaults. Spring Cloud Contract consumer tests run against provider-generated stubs.
 
 ### R5: Compliance Screening Availability
 **Risk:** `tms-compliance` down → payments cannot be released.
@@ -425,7 +425,7 @@ Enabling teams:
 | Event sourcing scope | Payment Hub + Settlement only | All domains | Full ES adds operational overhead; most domains don't benefit from replay |
 | CQRS scope | Cash Position + Liquidity read models | All domains | Most services don't need a distinct read model |
 | Blocking vs reactive | Spring MVC + virtual threads | Spring WebFlux | Virtual threads close the throughput gap; blocking is simpler to test and matches Spring Batch |
-| 20 services vs monolith | 20 deployable services | Modular monolith | Separate scaling, independent deployment, clear ownership boundaries; monolith would create merge contention |
+| Modular monolith vs microservices | Modular monolith (`treasury-api`) — Spring Modulith + ArchUnit | 20+ independent services | Too early to pay distributed-systems tax; module boundaries enforced in-process by ArchUnit. Extract services when a module proves it needs independent scaling or separate deployment cadence. |
 | Custom event store vs Axon | Custom PostgreSQL tables | Axon Framework | No framework lock-in; full SQL access for ad-hoc analytics; period constraints via DB triggers |
 | Outbox vs direct Kafka | Outbox + Debezium CDC | Direct `KafkaTemplate` in same TX | Outbox guarantees exactly-once; direct write risks dual-write inconsistency without 2PC |
 | Avro + Schema Registry | Avro | JSON Schema / Protobuf | Strongest backward-compat enforcement in Confluent ecosystem; binary compact |

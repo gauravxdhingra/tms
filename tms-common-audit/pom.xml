@@ -13,6 +13,31 @@
   </parent>
 
   <artifactId>tms-common-audit</artifactId>
-  <name>TMS — Common Audit</name>
+  <name>TMS Common — Audit</name>
+  <description>
+    Immutable audit event entity + AOP interceptor. Every state-mutating service
+    method annotated with @Audited writes a row to audit_events within the same
+    transaction. Audit rows are also forwarded to OpenSearch via Kafka.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>

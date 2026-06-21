@@ -19,7 +19,7 @@
 
 ## Identity and Authentication
 
-**IDP:** Keycloak 25
+**IDP:** Keycloak 26.2
 
 ```
 Keycloak realms:

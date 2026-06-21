@@ -6,7 +6,6 @@ import com.tms.events.payment.PaymentInitiatedEvent;
 import com.tms.events.payment.PaymentStatusChangedEvent;
 import com.tms.events.common.EventMetadata;
 import com.tms.payment.domain.*;
-import com.tms.payment.infrastructure.persistence.PaymentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -32,11 +31,11 @@ public class PaymentApplicationService {
     private static final String KAFKA_TOPIC_PAYMENT_EVENTS = "tms.payments.v1";
     private static final int    SCHEMA_VERSION             = 1;
 
-    private final PaymentRepository    paymentRepository;
-    private final OutboxPublisher      outboxPublisher;
-    private final Clock                clock;
+    private final PaymentRepositoryPort paymentRepository;
+    private final OutboxPublisher       outboxPublisher;
+    private final Clock                 clock;
 
-    public PaymentApplicationService(PaymentRepository paymentRepository,
+    public PaymentApplicationService(PaymentRepositoryPort paymentRepository,
                                      OutboxPublisher outboxPublisher,
                                      Clock clock) {
         this.paymentRepository = paymentRepository;
@@ -113,7 +112,7 @@ public class PaymentApplicationService {
             .setEventId(UUID.randomUUID().toString())
             .setEventType(eventType)
             .setEventVersion(SCHEMA_VERSION)
-            .setOccurredAt(Instant.now(clock).toEpochMilli() * 1000L)
+            .setOccurredAt(Instant.now(clock))
             .setCorrelationId(correlationId)
             .setLegalEntityId(legalEntityId)
             .setIssuedByUserId(null)

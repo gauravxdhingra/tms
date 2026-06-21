@@ -29,9 +29,17 @@ class PaymentHubArchitectureTest {
     }
 
     @Test
-    void layeredArchitecture() {
+    void enforceLayeredArchitecture() {
+        // Import only com.tms.payment.* classes so that consideringAllDependencies()
+        // doesn't flag java.*, jakarta.*, org.springframework.*, or com.tms.common.*.
+        // Layer rules apply only to inter-layer relationships within this service.
+        JavaClasses serviceClasses = new ClassFileImporter()
+            .importPackages("com.tms.payment");
+
+        // consideringOnlyDependenciesInLayers() restricts checks to dependencies
+        // between defined layers only — ignores java.*, jakarta.*, org.springframework.*
         layeredArchitecture()
-            .consideringAllDependencies()
+            .consideringOnlyDependenciesInLayers()
             .layer("Domain")         .definedBy("com.tms.payment.domain..")
             .layer("Application")    .definedBy("com.tms.payment.application..")
             .layer("Infrastructure") .definedBy("com.tms.payment.infrastructure..")
@@ -42,7 +50,7 @@ class PaymentHubArchitectureTest {
             .whereLayer("Infrastructure") .mayOnlyAccessLayers("Domain", "Application")
             .whereLayer("Config")         .mayOnlyAccessLayers("Domain", "Application", "Infrastructure")
 
-            .check(classes);
+            .check(serviceClasses);
     }
 
     @Test

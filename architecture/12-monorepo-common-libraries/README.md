@@ -99,10 +99,10 @@ tms/                                    # Maven multi-module root
 
   <properties>
     <java.version>21</java.version>
-    <spring-boot.version>4.0.0</spring-boot.version>
-    <spring-cloud.version>2025.0.0</spring-cloud.version>
-    <spring-kafka.version>4.0.0</spring-kafka.version>
-    <spring-amqp.version>4.0.0</spring-amqp.version>
+    <spring-boot.version>3.4.1</spring-boot.version>
+    <spring-cloud.version>2024.0.0</spring-cloud.version>
+    <spring-kafka.version>3.3.1</spring-kafka.version>
+    <spring-amqp.version>3.2.1</spring-amqp.version>
     <avro.version>1.12.0</avro.version>
     <confluent.version>7.8.0</confluent.version>
     <moneta.version>1.4.4</moneta.version>
@@ -790,7 +790,7 @@ docker compose -f docker-compose.infra.yml up -d
 | Kafka + KRaft | 9092 | No ZooKeeper; Schema Registry on 8081 |
 | RabbitMQ 3.13 | 5672, 15672 | Management UI; x-delayed-message plugin enabled |
 | Redis 7 | 6379 | Single node for dev |
-| Keycloak 25 | 8080 | Dev realm pre-configured with test users and roles |
+| Keycloak 26.2 | 8180 | Dev realm pre-configured with test users and roles |
 | MinIO | 9000, 9001 | S3-compatible; Console on 9001 |
 | OpenSearch 2 | 9200 | Single node for dev |
 | Mailpit | 8025, 1025 | SMTP catch-all for notification email testing |

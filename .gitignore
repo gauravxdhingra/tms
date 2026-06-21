@@ -1,2 +1,96 @@
-.claude
+# ── Maven ────────────────────────────────────────────────────────────────────
+**/target/
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ── Node / Angular / npm ─────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+.angular/
+.nx/cache/
+
+# ── Coverage and test output ──────────────────────────────────────────────────
+coverage/
+*.exec
+jacoco.xml
+surefire-reports/
+failsafe-reports/
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.code-workspace
+*.classpath
+*.project
+.settings/
+.factorypath
+.apt_generated/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+\#*\#
+.\#*
+
+# ── Logs and dumps ───────────────────────────────────────────────────────────
+*.log
+*.log.*
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
+crash-*
+
+# ── Local environment and secrets ────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.crt
+secrets/
+local-config/
+
+# ── Testcontainers local reuse cache ─────────────────────────────────────────
+.testcontainers.properties
+
+# ── Docker local volume data (if materialised under project) ─────────────────
+infra/postgres/data/
+infra/kafka/data/
+infra/redis/data/
+
+# ── Temporary / scratch files ────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+ar/
+
+# ── Claude Code session artifacts ────────────────────────────────────────────
+.claude/
+
+# ── Architecture decisions and documentation ARE version-controlled ───────────
+architecture/IMPROVEMENTS.md
+architecture/FUNCTIONAL_PRODUCT_REVIEW.md
+architecture/PROJECT_STRUCTURE_REVIEW.md
 DECISIONS.md

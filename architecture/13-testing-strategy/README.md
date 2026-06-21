@@ -269,17 +269,12 @@ Contract.make {
 Contract tests are generated stubs for downstream consumers. The BFF's integration test suite runs against the generated WireMock stub from `tms-payment-hub`. This guarantees that if `tms-payment-hub` changes its API, the BFF's consumer-driven contract test fails immediately in CI.
 
 ### Avro Schema Compatibility (enforced by CI)
-```kotlin
-// build.gradle.kts in tms-events-schema
-tasks.register("checkSchemaCompatibility") {
-    doLast {
-        // Uses Confluent Schema Registry Gradle plugin
-        // Fails if any .avsc change would break BACKWARD compatibility
-        exec {
-            commandLine("gradle", "testSchemasTask")
-        }
-    }
-}
+```bash
+# In CI — run against tms-events-schema module
+# Uses exec:java to call the Schema Registry compatibility check API
+mvn exec:java -pl tms-events-schema \
+  -Dexec.mainClass=com.tms.schema.CompatibilityCheck
+# Fails if any .avsc change would break BACKWARD compatibility
 ```
 
 Full test in producer:

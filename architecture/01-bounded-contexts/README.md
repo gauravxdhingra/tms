@@ -78,7 +78,7 @@
 │  ─────────────────────────── UI Layer ──────────────────────────────────────────────────── │
 │                                                                                             │
 │  ┌─────────────────────────────────────────────────────┐  ┌──────────────────────────────┐ │
-│  │  BFF (Backend for Frontend) — tms-bff               │  │  React SPA — tms-ui          │ │
+│  │  BFF (Backend for Frontend) — tms-bff               │  │  Angular SPA — tms-ui        │ │
 │  └─────────────────────────────────────────────────────┘  └──────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -425,9 +425,9 @@ Subledger detail (cash entries, trade entries) vs control account balances in th
 
 ---
 
-### `tms-identity`
-**Capabilities:** OIDC/OAuth2 (Keycloak-backed), RBAC + ABAC, SSO, MFA, SoD enforcement, user activity audit.
-No change from v1 functionally.
+### Identity (Keycloak — external service, not a TMS module)
+**Capabilities:** OIDC/OAuth2, RBAC + ABAC, SSO, MFA, SoD enforcement, user activity audit.
+Identity is provided by Keycloak 26.2 running as a managed service (Docker Compose locally, dedicated pod in Kubernetes). There is no `tms-identity` Spring Boot module — all JWT validation and role extraction runs inside each service via `tms-common-security`.
 **Phase:** 1
 
 ---
@@ -440,7 +440,7 @@ No change from v1 functionally.
 ---
 
 ### `tms-bff` (Backend for Frontend)
-**What it is:** An aggregation layer between the React UI and the microservices. The UI talks only to the BFF; the BFF fans out to microservices, aggregates responses, and returns a single view-optimised payload.
+**What it is:** An aggregation layer between the Angular UI and the microservices. The UI talks only to the BFF; the BFF fans out to microservices, aggregates responses, and returns a single view-optimised payload.
 **Why:** Without a BFF, the payment detail screen would require 6+ API calls (payment data, counterparty, account details, compliance status, audit trail, accounting entries). This is slow, brittle, and exposes microservice internals to the UI.
 **Capabilities:**
 - Aggregated views: payment detail, trade blotter, cash position dashboard, liquidity dashboard, settlement queue
@@ -454,7 +454,7 @@ No change from v1 functionally.
 
 ---
 
-### `tms-ui` (React SPA)
+### `tms-ui` (Angular SPA)
 See [11-ui-architecture/README.md](../11-ui-architecture/README.md) for full specification.
 **Phase:** 1 (payment ops, cash position, user admin); 2 (trade blotter, settlement queue, recon, accounting); 3 (liquidity dashboard, risk views, analytics)
 
@@ -462,7 +462,7 @@ See [11-ui-architecture/README.md](../11-ui-architecture/README.md) for full spe
 
 ## Shared Library Modules (Monorepo — not deployable services)
 
-These are Gradle subprojects that produce `.jar` libraries consumed by all services.
+These are Maven modules that produce `.jar` libraries consumed by all services.
 See [12-monorepo-common-libraries/README.md](../12-monorepo-common-libraries/README.md) for full specification.
 
 | Module | Contents |
@@ -500,7 +500,7 @@ Shared Kernel (read-only):
   tms-reference-data → all services (cached via Redis)
   tms-fx-rates → tms-cash-position, tms-liquidity, tms-risk, tms-accounting
   tms-rules-engine → tms-payment-hub, tms-message-manager, tms-settlement, tms-accounting (gRPC)
-  tms-identity → all services (JWT validation)
+  Keycloak (external) → all services (JWT validation via tms-common-security)
   tms-bank-accounts → tms-payment-hub, tms-cash-bat, tms-reconciliation
 
 Anti-Corruption Layer (ACL):
@@ -560,9 +560,9 @@ UI Layer:
 | Reference Data | `tms-reference-data` |
 | Bank Accounts | `tms-bank-accounts` |
 | Compliance | `tms-compliance` |
-| Identity | `tms-identity` |
+| Identity | Keycloak 26.2 (external; no TMS module) |
 | Reporting | `tms-reporting` |
 | UI Layer | `tms-bff`, `tms-ui` |
 | Shared Libraries | `tms-events-schema`, `tms-common-audit`, `tms-common-outbox`, `tms-common-idempotency`, `tms-common-security`, `tms-common-money`, `tms-common-validation`, `tms-common-messaging`, `tms-common-test` |
-| **Total deployable services** | **20** |
+| **Total deployable services** | **19** (Keycloak is an external dependency, not a TMS service) |
 | **Total shared library modules** | **9** |
