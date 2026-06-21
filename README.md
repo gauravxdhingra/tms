@@ -28,14 +28,14 @@ An event-driven corporate treasury platform. The product goal is multi-entity ca
 # 2. Build everything (skips tests for speed)
 mvn clean package -DskipTests --threads 4
 
-# 3. Install shared libraries into local .m2, then run Payment Hub
+# 3. Install shared libraries into local .m2, then run Payment Operations
 mvn install -DskipTests
-mvn -pl tms-payment-hub spring-boot:run -Dspring-boot.run.profiles=local
+mvn -pl modules/payment-operations spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Payment Hub listens on `http://localhost:8081`. Health check: `curl http://localhost:8081/actuator/health`
+Payment Operations listens on `http://localhost:8081`. Health check: `curl http://localhost:8081/actuator/health`
 
-To stop infrastructure: `docker compose -f docker-compose.infra.yml down`
+To stop infrastructure: `docker compose -f infrastructure/compose/docker-compose.infra.yml down`
 
 ---
 
@@ -68,13 +68,13 @@ mvn test
 mvn clean verify
 
 # Single module and its dependencies
-mvn -pl tms-payment-hub -am test
+mvn -pl modules/payment-operations -am test
 
 # Integration-test profile (requires Docker for Testcontainers)
 mvn clean verify -P integration-test
 ```
 
-All 5 ArchUnit architectural rules pass in `tms-payment-hub`. Integration tests are not yet written.
+All 5 ArchUnit architectural rules pass in `modules/payment-operations`. Integration tests are not yet written.
 
 ---
 
@@ -82,32 +82,32 @@ All 5 ArchUnit architectural rules pass in `tms-payment-hub`. Integration tests 
 
 ```
 tms/
-├── architecture/           Architecture suite (target-state design; see status notes inside)
-├── infra/                  Keycloak realm, Postgres init scripts, WireMock mappings
+├── docs/
+│   ├── architecture/       Architecture suite (target-state design; see status notes inside)
+│   └── adr/
+│       └── DECISIONS.md    Architecture decision log
+├── contracts/
+│   └── event-contracts/    Avro schemas and generated event classes (com.tms.events.*)
+├── libraries/
+│   ├── treasury-kernel/    JSR-354 monetary arithmetic + IBAN validators (com.tms.kernel.*)
+│   ├── platform-events/    Outbox, audit, idempotency, Kafka/AMQP messaging (com.tms.platform.*)
+│   ├── platform-security/  JWT/Keycloak context, RLS filter, method security (com.tms.platform.security)
+│   └── test-support/       Testcontainers base classes, WireMock, AssertJ helpers (test scope only)
+├── modules/
+│   └── payment-operations/ Payment domain — domain + application + infrastructure layers
+│       ├── domain/         Payment aggregate, state machine, repository port
+│       ├── application/    PaymentApplicationService (orchestration + outbox)
+│       ├── infrastructure/ JPA repository, Flyway migration, REST controller
+│       └── arch/           ArchUnit rules (5 rules, all green)
+├── future-modules/         Empty Maven scaffolds — inactive unless -P future-modules
+├── infrastructure/
+│   ├── compose/            docker-compose.infra.yml
+│   ├── keycloak/           Realm export and realm-creation scripts
+│   ├── postgres/           DB init scripts
+│   └── wiremock/           WireMock stub mappings
 ├── scripts/
 │   └── start-dev.sh        Prerequisite checks + infra startup (Mac and Linux)
-├── docker-compose.infra.yml
-├── pom.xml                 Maven reactor and centralized version catalogue
-├── DECISIONS.md            Architecture decision log
-│
-├── tms-events-schema/      Avro schemas and generated event classes
-│
-├── tms-common-money/       JSR-354 monetary arithmetic (TmsMoney, MonetaryAmountEmbeddable)
-├── tms-common-outbox/      Transactional outbox publisher and local relay scheduler
-├── tms-common-idempotency/ Redis-backed idempotency store
-├── tms-common-security/    JWT/Keycloak context, RLS filter, method security
-├── tms-common-audit/       Immutable audit event entity
-├── tms-common-messaging/   Idempotent Kafka consumer base class
-├── tms-common-validation/  IBAN/BIC validators
-├── tms-common-test/        Testcontainers base classes (stubs, not yet implemented)
-│
-├── tms-payment-hub/        Payment domain — the only service with real source code today
-│   ├── domain/             Payment aggregate, state machine, repository port
-│   ├── application/        PaymentApplicationService (orchestration + outbox)
-│   ├── infrastructure/     JPA repository, Flyway migration, REST controller
-│   └── arch/               ArchUnit rules (5 rules, all green)
-│
-└── tms-*/                  All other domain modules are Maven scaffolds only
+└── pom.xml                 Maven reactor and centralized version catalogue
 ```
 
 ---
@@ -138,7 +138,7 @@ The codebase is platform-neutral Java/Maven. These rules keep it that way:
 - **Image tags are pinned** — no `latest`. Every image has a tested digest-stable version.
 - **Shell scripts use `/usr/bin/env bash`** and avoid macOS-only utilities.
 - **Line endings** are enforced LF via `.gitattributes` — prevents CRLF failures on Linux.
-- The Compose stack is a **local dev environment**, not a production topology. For EC2 deployment, see [`architecture/IMPROVEMENTS.md § 3`](architecture/IMPROVEMENTS.md).
+- The Compose stack is a **local dev environment**, not a production topology. For EC2 deployment, see [`docs/architecture/IMPROVEMENTS.md § 3`](docs/architecture/IMPROVEMENTS.md).
 
 ---
 
@@ -146,7 +146,7 @@ The codebase is platform-neutral Java/Maven. These rules keep it that way:
 
 | Document | What it covers |
 |---|---|
-| [Architecture Index](architecture/README.md) | Entry point for all design documents |
+| [Architecture Index](docs/architecture/README.md) | Entry point for all design documents |
 
 Architecture documents describe the **target state**. Where docs and code disagree, the code is authoritative for what is implemented today.
 
@@ -155,10 +155,8 @@ Architecture documents describe the **target state**. Where docs and code disagr
 ## Known Gaps (Foundation)
 
 - Schema Registry is not in the Compose stack yet — Kafka/Avro flows are not end-to-end runnable.
-- Kafka has a single `localhost:9092` listener — inter-container producer/consumer clients will fail until a `kafka:29092` internal listener is added.
 - No integration tests exist yet; Testcontainers base classes in `tms-common-test` are stubs.
 - `tms-ui` is a Maven POM placeholder — no Angular project has been initialized.
-- Mailpit and MinIO were using `latest` tags; both are now pinned. See `docker-compose.infra.yml`.
 
 ---
 

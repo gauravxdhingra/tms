@@ -11,7 +11,7 @@
 set -euo pipefail
 
 TMS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="$TMS_ROOT/docker-compose.infra.yml"
+COMPOSE_FILE="$TMS_ROOT/infrastructure/compose/docker-compose.infra.yml"
 
 # ── Color output: disabled when stdout is not a TTY or NO_COLOR is set ────────
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then

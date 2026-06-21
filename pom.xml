@@ -15,47 +15,22 @@
 
   <!-- ── Module registry ──────────────────────────────────────────────────── -->
   <modules>
-    <!-- Shared libraries (build first — no Spring Boot dependency) -->
-    <module>tms-events-schema</module>
-    <module>tms-common-money</module>
-    <module>tms-common-validation</module>
-    <module>tms-common-audit</module>
-    <module>tms-common-outbox</module>
-    <module>tms-common-idempotency</module>
-    <module>tms-common-security</module>
-    <module>tms-common-messaging</module>
-    <module>tms-common-test</module>
+    <!-- Contracts: Avro event schemas (build first — no Spring Boot dependency) -->
+    <module>contracts/event-contracts</module>
 
-    <!-- Config server (must start before other services) -->
-    <module>tms-config-server</module>
+    <!-- Libraries: stable shared primitives -->
+    <module>libraries/treasury-kernel</module>
+    <module>libraries/platform-events</module>
+    <module>libraries/platform-security</module>
+    <module>libraries/test-support</module>
 
-    <!-- Domain services -->
-    <module>tms-reference-data</module>
-    <module>tms-bank-accounts</module>
-    <module>tms-fx-rates</module>
-    <module>tms-rules-engine</module>
-    <module>tms-compliance</module>
-    <module>tms-payment-hub</module>
-    <module>tms-cash-ecf</module>
-    <module>tms-cash-bat</module>
-    <module>tms-cash-position</module>
-    <module>tms-trade</module>
-    <module>tms-confirmation-matching</module>
-    <module>tms-settlement</module>
-    <module>tms-accounting</module>
-    <module>tms-risk</module>
-    <module>tms-ihb</module>
-    <module>tms-liquidity</module>
-    <module>tms-reconciliation</module>
-    <module>tms-notifications</module>
+    <!-- Modules: domain implementations -->
+    <module>modules/payment-operations</module>
 
-    <!-- Platform layer -->
-    <module>tms-bff</module>
-    <module>tms-gateway</module>
-
-    <!-- Frontend (last — depends on Node/npm being available) -->
-    <module>tms-ui</module>
+    <!-- Applications: runnable Spring Boot deployables -->
+    <!-- treasury-api and treasury-ui added when composition root is created -->
   </modules>
+
 
   <!-- ── Version catalog ──────────────────────────────────────────────────── -->
   <properties>
@@ -67,11 +42,11 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- Core frameworks -->
-    <spring-boot.version>3.4.1</spring-boot.version>
-    <spring-cloud.version>2024.0.0</spring-cloud.version>
+    <spring-boot.version>4.1.0</spring-boot.version>
+    <spring-cloud.version>2025.1.2</spring-cloud.version>
 
     <!-- Data -->
-    <flyway.version>10.21.0</flyway.version>
+    <flyway.version>12.4.0</flyway.version>
     <jooq.version>3.19.15</jooq.version>
 
     <!-- Messaging / serialization -->
@@ -83,10 +58,10 @@
 
     <!-- Observability -->
     <opentelemetry-bom.version>1.44.1</opentelemetry-bom.version>
-    <micrometer.version>1.14.2</micrometer.version>
+    <micrometer.version>1.17.0</micrometer.version>
 
     <!-- Testing -->
-    <testcontainers.version>1.20.4</testcontainers.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
     <archunit.version>1.3.0</archunit.version>
     <wiremock.version>3.10.0</wiremock.version>
     <rest-assured.version>5.5.0</rest-assured.version>
@@ -149,50 +124,30 @@
         <scope>import</scope>
       </dependency>
 
-      <!-- ── TMS shared library versions ──────────────────────────────── -->
+      <!-- ── TMS library versions ──────────────────────────────────────── -->
       <dependency>
         <groupId>com.tms</groupId>
-        <artifactId>tms-events-schema</artifactId>
+        <artifactId>event-contracts</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.tms</groupId>
-        <artifactId>tms-common-money</artifactId>
+        <artifactId>treasury-kernel</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.tms</groupId>
-        <artifactId>tms-common-validation</artifactId>
+        <artifactId>platform-events</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.tms</groupId>
-        <artifactId>tms-common-audit</artifactId>
+        <artifactId>platform-security</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.tms</groupId>
-        <artifactId>tms-common-outbox</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.tms</groupId>
-        <artifactId>tms-common-idempotency</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.tms</groupId>
-        <artifactId>tms-common-security</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.tms</groupId>
-        <artifactId>tms-common-messaging</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.tms</groupId>
-        <artifactId>tms-common-test</artifactId>
+        <artifactId>test-support</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
@@ -437,6 +392,34 @@
 
   <!-- ── Profiles ─────────────────────────────────────────────────────────── -->
   <profiles>
+    <!-- Future modules not yet implemented — activate with: mvn ... -P future-modules -->
+    <profile>
+      <id>future-modules</id>
+      <modules>
+        <module>future-modules/tms-accounting</module>
+        <module>future-modules/tms-bank-accounts</module>
+        <module>future-modules/tms-bff</module>
+        <module>future-modules/tms-cash-bat</module>
+        <module>future-modules/tms-cash-ecf</module>
+        <module>future-modules/tms-cash-position</module>
+        <module>future-modules/tms-compliance</module>
+        <module>future-modules/tms-config-server</module>
+        <module>future-modules/tms-confirmation-matching</module>
+        <module>future-modules/tms-fx-rates</module>
+        <module>future-modules/tms-gateway</module>
+        <module>future-modules/tms-ihb</module>
+        <module>future-modules/tms-liquidity</module>
+        <module>future-modules/tms-notifications</module>
+        <module>future-modules/tms-reconciliation</module>
+        <module>future-modules/tms-reference-data</module>
+        <module>future-modules/tms-risk</module>
+        <module>future-modules/tms-rules-engine</module>
+        <module>future-modules/tms-settlement</module>
+        <module>future-modules/tms-trade</module>
+        <module>future-modules/tms-ui</module>
+      </modules>
+    </profile>
+
     <!-- Integration tests: mvn verify -P integration-test -->
     <profile>
       <id>integration-test</id>

@@ -90,7 +90,7 @@ ar/
 .claude/
 
 # ── Architecture decisions and documentation ARE version-controlled ───────────
-architecture/IMPROVEMENTS.md
-architecture/FUNCTIONAL_PRODUCT_REVIEW.md
-architecture/PROJECT_STRUCTURE_REVIEW.md
-DECISIONS.md
+docs/architecture/IMPROVEMENTS.md
+docs/architecture/FUNCTIONAL_PRODUCT_REVIEW.md
+docs/architecture/PROJECT_STRUCTURE_REVIEW.md
+docs/adr/DECISIONS.md
