@@ -1,6 +1,0 @@
-com/tms/common/outbox/OutboxPublisher.class
-com/tms/common/outbox/OutboxRelayScheduler.class
-com/tms/common/outbox/OutboxSerializationException.class
-com/tms/common/outbox/AvroSerializer.class
-com/tms/common/outbox/OutboxEventRepository.class
-com/tms/common/outbox/OutboxEvent.class
